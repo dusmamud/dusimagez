@@ -22,7 +22,7 @@ jobs:
         with:
           toolchain: stable
           targets: wasm32-unknown-unknown
-      - uses: jetli/wasm-pack-action@v2
+      - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: latest
       - name: Build WASM package (nodejs target; see packages/js build script)
