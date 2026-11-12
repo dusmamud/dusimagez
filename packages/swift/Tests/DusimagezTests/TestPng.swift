@@ -1,5 +1,4 @@
 import Foundation
-import Compression
 
 /// Tiny in-test PNG encoder (RGB8, filter 0 per scanline), so tests
 /// need no binary blobs and no extra core API. Deterministic for a
@@ -49,10 +48,11 @@ enum TestPng {
                 raw.append(contentsOf: [r, g, b])
             }
         }
-        // zlib compress (Data.compressed(using: .zlib), macOS 10.15+ / iOS 13+).
-        guard let compressed = try? raw.compressed(using: .zlib) else {
-            fatalError("TestPng: zlib compression failed")
-        }
+        // zlib stream via stored DEFLATE blocks (see zlibStored below)
+        // — no Compression framework dependency: `Data.compressed`
+        // is not available to a SwiftPM test target here, and a
+        // stored-block stream is always valid, just uncompressed.
+        let compressed = zlibStored(raw)
         var out = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) // PNG signature
         var ihdr = Data()
         ihdr.append(contentsOf: withUnsafeBytes(of: UInt32(width).bigEndian, Array.init))
@@ -75,6 +75,41 @@ enum TestPng {
         let crc = crc32(crcData)
         out.append(contentsOf: withUnsafeBytes(of: crc.bigEndian, Array.init))
         return out
+    }
+
+    /// Minimal zlib encoder (RFC 1950) using DEFLATE stored blocks
+    /// (RFC 1951 §3.2.4): 0x78 0x01 header, then ≤65,535-byte raw
+    /// blocks (BFINAL + BTYPE=00, LEN/NLEN, bytes), then Adler-32.
+    /// Deterministic; any zlib decoder accepts stored blocks.
+    static func zlibStored(_ data: Data) -> Data {
+        var out = Data()
+        out.append(contentsOf: [0x78, 0x01]) // CMF/FLG, no preset dict
+        var offset = 0
+        while true {
+            let remaining = data.count - offset
+            let take = min(remaining, 65_535)
+            let isFinal = remaining <= 65_535
+            out.append(isFinal ? 1 : 0) // BFINAL, BTYPE=00, byte-aligned
+            let len = UInt16(take)
+            out.append(contentsOf: withUnsafeBytes(of: len.littleEndian, Array.init))
+            out.append(contentsOf: withUnsafeBytes(of: (~len).littleEndian, Array.init))
+            out.append(data[offset ..< offset + take])
+            offset += take
+            if isFinal { break }
+        }
+        out.append(contentsOf: withUnsafeBytes(of: adler32(data).bigEndian, Array.init))
+        return out
+    }
+
+    /// Adler-32 (RFC 1950), big-endian in the stream.
+    static func adler32(_ data: Data) -> UInt32 {
+        var a: UInt32 = 1
+        var b: UInt32 = 0
+        for byte in data {
+            a = (a + UInt32(byte)) % 65_521
+            b = (b + a) % 65_521
+        }
+        return (b << 16) | a
     }
 
     /// CRC-32 (IEEE, polynomial 0xEDB88320), bitwise — no table needed.
