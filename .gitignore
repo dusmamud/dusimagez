@@ -1,0 +1,17 @@
+/target/
+**/target/
+node_modules/
+dist/
+.astro/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+build/
+*.whl
+*.so
+*.dylib
+*.dll
+.DS_Store
+.idea/
+*.iml
