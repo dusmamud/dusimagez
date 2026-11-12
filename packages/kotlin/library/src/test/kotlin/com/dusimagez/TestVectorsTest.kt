@@ -175,7 +175,9 @@ class TestVectorsTest {
     /** Maps a JSON options object onto CompressOptions (tolerant of key casing). */
     private fun optionsFromJson(json: Map<String, Any?>): CompressOptions {
         if (json.isEmpty()) return CompressOptions()
-        fun <T> pick(vararg keys: String): Any? = keys.firstNotNullOfOrNull { json[it] }
+        // NOTE: no type parameter here — an unused `<T>` makes the
+        // compiler unable to infer the type at the call sites.
+        fun pick(vararg keys: String): Any? = keys.firstNotNullOfOrNull { json[it] }
         val base = CompressOptions()
         return CompressOptions(
             quality = TestJson.long(pick("quality"))?.toInt()?.toUByte() ?: base.quality,

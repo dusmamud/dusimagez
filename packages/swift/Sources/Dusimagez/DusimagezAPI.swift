@@ -20,6 +20,22 @@ import Foundation
 // The wrapper methods take Data with an unlabeled first parameter
 // and call the generated top-level functions with the `input:`
 // label, so there is no ambiguity with the wrapper itself.
+//
+// Naming — do NOT rename this type back to `Dusimagez`, and do NOT
+// rename this file back to `Dusimagez.swift`:
+// * A type named `Dusimagez` collides with the module name: from
+//   outside the module `Dusimagez.compressImage(...)` resolves to
+//   the generated free function, not the wrapper — every call site
+//   failed in CI with "missing argument label 'input:'".
+// * A file named `Dusimagez.swift` differs from the generated
+//   `dusimagez.swift` by case only; on the macOS runner that file
+//   was silently not compiled (the wrapper's members were invisible
+//   to tests while `swift build` still passed). Hence
+//   `DusimagezAPI.swift`.
+// Inside the methods the generated functions are called module-
+// qualified (`Dusimagez.compressImage(...)`): unqualified, the call
+// resolves to this enum's own static method instead of the global
+// function.
 
 /// Stable error code, e.g. `"INVALID_IMAGE"` (== variant name in SNAKE_UPPER).
 public extension DusimagezError {
@@ -76,7 +92,7 @@ public enum DusimagezAPI {
         _ input: Data,
         options: CompressOptions = CompressOptions()
     ) throws -> Data {
-        Data(try compressImage(input: [UInt8](input), options: options))
+        Data(try Dusimagez.compressImage(input: [UInt8](input), options: options))
     }
 
     /// Re-encode an image so the result is at most `targetBytes`
@@ -89,7 +105,7 @@ public enum DusimagezAPI {
         targetBytes: UInt64,
         options: CompressOptions = CompressOptions()
     ) throws -> Data {
-        Data(try compressToSize(
+        Data(try Dusimagez.compressToSize(
             input: [UInt8](input),
             targetBytes: targetBytes,
             options: options
@@ -103,12 +119,12 @@ public enum DusimagezAPI {
         _ input: Data,
         options: CompressOptions = CompressOptions()
     ) throws -> CompressReport {
-        try compressWithReport(input: [UInt8](input), options: options)
+        try Dusimagez.compressWithReport(input: [UInt8](input), options: options)
     }
 
     /// Read an image's summary without modifying it.
     public static func getImageInfo(_ input: Data) throws -> ImageInfo {
-        try getImageInfo(input: [UInt8](input))
+        try Dusimagez.getImageInfo(input: [UInt8](input))
     }
 
     /// Compress many images in one call. One result per input, same
@@ -119,6 +135,6 @@ public enum DusimagezAPI {
         _ inputs: [Data],
         options: CompressOptions = CompressOptions()
     ) -> [BulkItemResult] {
-        bulkCompress(inputs: inputs.map { [UInt8]($0) }, options: options)
+        Dusimagez.bulkCompress(inputs: inputs.map { [UInt8]($0) }, options: options)
     }
 }

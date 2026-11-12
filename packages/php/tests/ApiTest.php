@@ -70,7 +70,7 @@ final class ApiTest extends TestCase
         $this->assertSame(1, $info['width']);
         $this->assertSame(1, $info['height']);
         $this->assertTrue($info['has_alpha']);
-        $this->assertSame('La8', $info['colour_type']);
+        $this->assertSame('la8', $info['colour_type']);
         $this->assertSame(strlen($png), $info['file_size']);
     }
 

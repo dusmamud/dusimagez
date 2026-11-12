@@ -7,7 +7,8 @@ namespace Dusimagez\Tests;
 /**
  * Test fixtures, built in pure PHP — no binary blobs are committed.
  *
- * - 1x1 greyscale+alpha PNG (68 bytes, colour type "La8"), embedded
+ * - 1x1 greyscale+alpha PNG (68 bytes, colour type "la8" — the core
+ *   lowercases it), embedded
  *   as base64 (the same fixture the Rust FFI tests use).
  * - 100x80 solid JPEG (quality 90), embedded as base64.
  * - PNG/TIFF fixtures are generated on the fly (solidPng,
