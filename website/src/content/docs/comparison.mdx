@@ -1,0 +1,54 @@
+---
+title: Comparison
+description: dusimagez compared with generic image compressors — offline vs online, languages, target-size mode and presets. No invented numbers.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+An honest comparison with the tools people usually reach for. No benchmark
+numbers are quoted here: v0.1.0 ships no benchmark suite, and any file-size
+percentage would depend on the test image. The right check is to run the
+[shared test vectors](https://github.com/dusmamud/dusimagez/blob/main/shared/test-vectors.json)
+yourself — they are the same inputs and bounds in every language.
+
+## At a glance
+
+| | dusimagez | Squoosh (web) | Sharp / Pillow / ImageMagick | TinyPNG (online) |
+|---|---|---|---|---|
+| Offline (no upload) | yes | yes (in-browser) | yes | no — images are uploaded |
+| Languages | Rust, JS, Python, Go, PHP, Kotlin, Swift | JS (browser) | one per library | API clients |
+| Compress to an exact target size | yes (quality search + downscale, or honest failure) | no (manual quality slider) | no (you write the loop) | no |
+| Before/after report | yes (`saved_bytes`, `saved_percent`, `quality_used`, `resized`) | file size shown in UI | you compute it | size shown in UI |
+| Presets (Web / Social / Print / Archive) | yes | no | no | no |
+| Batch with per-item errors | yes (`bulk_compress`) | one file at a time | you write the loop | API, per-file |
+| PNG palette quantise | yes | yes | yes (with options) | yes |
+| Subsampling / progressive / effort control | yes | partial | yes | no |
+| Formats in | JPEG, PNG, WebP, GIF, BMP, TIFF, AVIF | broad | broad | JPEG, PNG, WebP |
+| HEIC | no (v0.1.0) | yes (browser decode) | depends on build | yes |
+
+## When to use what
+
+- **Use dusimagez** when compression is part of your program — a server,
+  a CLI pipeline, a mobile app, or a build step — and you want the same
+  behaviour in every language, a target byte budget, and a report you can
+  log or show.
+- **Use Squoosh** when you have one image and want to eyeball the result
+  in a browser. It is the best manual tool; it is not a library.
+- **Use Sharp / Pillow / ImageMagick** when you already depend on one of
+  them and only need basic quality settings. They are general image
+  libraries; dusimagez is a compressor with a target-size search, presets
+  and a report built in.
+- **Use TinyPNG** when you are fine uploading images to a third-party
+  service and want zero setup. Do not use it for private images — they
+  leave your machine.
+
+## What dusimagez does not do (v0.1.0)
+
+- No HEIC; AVIF encode is lossy-only / 8-bit; GIF output is first-frame
+  only — see [Formats](/formats/).
+- No resize/crop/convert/watermark beyond what compression needs. For the
+  full toolkit (resize, crop, convert, watermark, annotate, palette,
+  collage, pixelate), see the sibling project
+  [dusrelimage](https://github.com/dusmamud/dusrelimage).
+- No streaming: the whole image lives in memory, guarded by
+  `max_pixels` / `max_dimension`.

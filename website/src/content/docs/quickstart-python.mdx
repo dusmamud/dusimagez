@@ -1,0 +1,66 @@
+---
+title: Quickstart — Python
+description: Use dusimagez from Python — PyO3 bindings with Pydantic v2 models, same Rust core.
+---
+
+```bash
+pip install dusimagez
+```
+
+Requires Python 3.10+.
+
+## Compress
+
+```python
+from dusimagez import compress_image, CompressOptions
+
+data = open("input.jpg", "rb").read()
+out = compress_image(data, CompressOptions(quality=80))
+open("output.jpg", "wb").write(out)
+```
+
+`CompressOptions` is also available as a Pydantic v2 model for validation
+(`from dusimagez import CompressOptionsModel`) — the import is optional;
+the plain dataclass-style options work without Pydantic installed.
+
+## Compress to a target size
+
+```python
+from dusimagez import compress_to_size, CompressOptions
+
+# 200 KB or less, or a DusimagezError with code TARGET_SIZE_UNREACHABLE.
+out = compress_to_size(data, 200_000, CompressOptions())
+```
+
+## Report and info
+
+```python
+from dusimagez import compress_with_report, get_image_info, CompressOptions
+
+info = get_image_info(data)
+print(info.format, info.width, info.height)
+
+report = compress_with_report(data, CompressOptions(preset="Web"))
+print(f"{report.original_size} -> {report.output_size} bytes, "
+      f"saved {report.saved_percent:.1f}%, quality {report.quality_used}")
+```
+
+## Batch
+
+```python
+from dusimagez import bulk_compress, CompressOptions
+
+results = bulk_compress([data1, data2, b""], CompressOptions())
+for r in results:
+    if r.ok:
+        print("saved", r.report.saved_bytes, "bytes")
+    else:
+        print(r.error.code, r.error.message_en)  # per-item error
+```
+
+## Errors
+
+Failures raise `DusimagezError` with `.code`, `.message_en` and
+`.message_hi` — see [Error codes](/errors/) for all 9 codes.
+
+Full option list: [Options reference](/options/).

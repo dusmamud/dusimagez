@@ -1,0 +1,65 @@
+---
+title: Presets
+description: dusimagez presets — Web, Social, Print, Archive — and the exact quality, effort and subsampling defaults each one sets.
+---
+
+A preset is a named starting point: it sets quality, effort and
+subsampling defaults in one word. **Any option you set explicitly always
+overrides the preset's value for that field** — a preset never locks you
+out of a control.
+
+## The four presets
+
+| Preset | Quality | Subsampling | Effort | Best for |
+|---|---|---|---|---|
+| `Web` | 80 | S420 | 4 | Small files for web pages |
+| `Social` | 85 | S420 | 4 | Balanced quality for sharing |
+| `Print` | 95 | S444 | 6 | High quality for print |
+| `Archive` | 100 | S444 | 6 | Near-lossless keeping (lossless where the format supports it) |
+
+A preset sets only quality, effort and subsampling — it never touches
+`progressive` (default `false`) or any other field.
+
+These numbers are the v0.1.0 contract (defined in
+[shared/spec.md](https://github.com/dusmamud/dusimagez/blob/main/shared/spec.md)):
+the core implements exactly these values in every binding.
+
+## How to use them
+
+```bash
+dusimagez compress photo.jpg web.jpg --preset web
+dusimagez compress photo.jpg social.jpg --preset social
+```
+
+```rust
+use dusimagez::{compress_image, CompressOptions, Preset};
+
+let mut options = CompressOptions::default();
+options.preset = Some(Preset::Web);
+let out = compress_image(&bytes, &options)?;
+```
+
+## Overriding a preset
+
+```rust
+// Web preset, but keep full colour resolution
+let mut options = CompressOptions::default();
+options.preset = Some(Preset::Web);
+options.subsampling = Subsampling::S444; // explicit field wins
+let out = compress_image(&bytes, &options)?;
+```
+
+## Which preset should I pick?
+
+- **Web** — the default choice for images on a page. Quality 80 with
+  S420 subsampling is where most of the size saving comes from.
+- **Social** — a step up in quality for images people will look at closely
+  (profile photos, shared albums). Still small.
+- **Print** — quality 95 with full colour resolution (S444). For images
+  that will be printed or zoomed, where artefacts would actually show.
+- **Archive** — keep as much as possible. Quality 100, S444, and lossless
+  where the output format supports it. The file will be much larger than
+  Web — that is the point.
+
+If none of these fits, skip the preset and set `quality`, `subsampling`
+and `effort` directly — see the [Options reference](/options/).

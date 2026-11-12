@@ -1,0 +1,51 @@
+name: Publish to npm
+
+# Trusted Publishing (OIDC) — manual dispatch only.
+# One-time dashboard setup required first: npmjs.com → package
+# dusimagez → Settings → Publishing access → Trusted publisher
+# (GitHub Actions, repo dusmamud/dusimagez, workflow npm.yml).
+# No npm token is stored in repo secrets.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    name: Publish packages/js to npm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: jetli/wasm-pack-action@v2
+        with:
+          version: latest
+      - name: Build WASM package (nodejs target; see packages/js build script)
+        # The package's own `npm run build` rebuilds the same
+        # wasm-pkg output, so this step is just an early, explicit
+        # build; it must use the repo script — a plain
+        # `wasm-pack build` fails at the link step (C libwebp needs
+        # the wasi-shim libc symbols).
+        run: crates/dusimagez-wasm/scripts/wasm-build.sh nodejs packages/js/wasm-pkg
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: packages/js/package-lock.json
+      - name: Install deps
+        working-directory: packages/js
+        run: npm ci
+      - name: Build + test
+        working-directory: packages/js
+        run: |
+          npm run build
+          npm test
+      - name: Publish (OIDC, provenance)
+        working-directory: packages/js
+        run: npm publish --provenance --access public

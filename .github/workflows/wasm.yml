@@ -1,0 +1,45 @@
+name: WASM + JS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/dusimagez-wasm/**"
+      - "packages/js/**"
+      - "shared/**"
+      - ".github/workflows/wasm.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "crates/dusimagez-wasm/**"
+      - "packages/js/**"
+      - "shared/**"
+      - ".github/workflows/wasm.yml"
+
+jobs:
+  wasm-js:
+    name: wasm-pack + vitest
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: jetli/wasm-pack-action@v2
+        with:
+          version: latest
+      - name: Build WASM package
+        run: crates/dusimagez-wasm/scripts/wasm-build.sh nodejs packages/js/wasm-pkg
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: packages/js/package-lock.json
+      - name: Install JS deps
+        working-directory: packages/js
+        run: npm ci
+      - name: Vitest
+        working-directory: packages/js
+        run: npm test

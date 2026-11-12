@@ -1,0 +1,102 @@
+---
+title: dusimagez
+description: Offline image compressor — reduce image file size with maximum control. One Rust core, bindings for Rust, JavaScript, Python, Go, PHP, Kotlin and Swift, plus a CLI.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+dusimagez is an **offline image compressor** — reduce image file size with
+maximum control. Compress one image, compress to an exact target file size,
+or get a full before/after report — with pro controls: quality, chroma
+subsampling, progressive JPEG, PNG palette quantise, WebP/AVIF effort,
+metadata strip/keep, presets (Web / Social / Print / Archive),
+downscale-only resize, and batch mode.
+
+One Rust core, with bindings for Rust, JavaScript/TypeScript (WASM),
+Python, Go, PHP, Kotlin (Android) and Swift (iOS), plus a CLI. **No upload,
+no network at runtime** — your images never leave your machine.
+
+> These docs are in English for v0.1.0. The error messages in the package
+> itself are bilingual: every error carries an English and a Hindi message
+> (see [Error codes](/errors/)).
+
+## Install
+
+```bash
+# Rust
+cargo add dusimagez
+
+# JavaScript / TypeScript
+npm install dusimagez
+
+# Python
+pip install dusimagez
+
+# Go
+go get github.com/dusmamud/dusimagez/go
+
+# PHP
+composer require dusmamud/dusimagez
+```
+
+<Aside type="note" title="v0.1.0 is not published yet">
+The package is not on crates.io, npm or PyPI yet — the commands above work
+once v0.1.0 is published. Until then, build the CLI from source (see the
+[Compressor guide](/guide/)) or follow the repository on
+[GitHub](https://github.com/dusmamud/dusimagez).
+</Aside>
+
+Requires Rust 1.88+, Node 18+, Python 3.10+, Go 1.22+, or PHP 8.1+ with the
+FFI extension (see the per-language quickstarts).
+
+## Your first compression
+
+```bash
+# Compress a JPEG at quality 80 (the default)
+dusimagez compress input.jpg output.jpg --quality 80
+
+# Compress to an exact target size — 200 KB or less
+dusimagez compress input.jpg output.jpg --target-bytes 200000
+
+# Just inspect an image, without writing anything
+dusimagez info input.jpg
+```
+
+```rust
+use dusimagez::{compress_image, CompressOptions};
+
+let out = compress_image(&bytes, &CompressOptions::default())?;
+```
+
+## What makes it different
+
+- **Target size, not just quality.** `compress_to_size` binary-searches
+  quality (and downscales if it must) until the file fits your byte budget
+  — or fails honestly with `TARGET_SIZE_UNREACHABLE` instead of silently
+  handing you an oversized file.
+- **A report, not just bytes.** `compress_with_report` tells you the
+  original size, output size, bytes and percent saved, the quality actually
+  used, and whether the image was resized.
+- **Pro controls, not a single slider.** Subsampling, progressive JPEG,
+  PNG palette quantise, WebP/AVIF effort, metadata strip/keep, DPI,
+  auto-orient — see the [Options reference](/options/).
+- **One core, every language.** The same Rust core backs all bindings, and
+  all of them run the same [shared test vectors](https://github.com/dusmamud/dusimagez/blob/main/shared/test-vectors.json)
+  — a result in Python matches the result in Go.
+
+## Honest limits (v0.1.0)
+
+- **No HEIC** (libheif + licence).
+- **AVIF encode is lossy-only / 8-bit** (underlying crate limit).
+- **GIF encode is first-frame only** for animated input.
+- **Whole image in memory** — no streaming.
+
+See [Formats](/formats/) for the full in/out matrix.
+
+## Next steps
+
+- [Compressor guide](/guide/) — CLI, target size, resize, metadata.
+- [Options reference](/options/) — every `CompressOptions` field and default.
+- [Presets](/presets/) — Web, Social, Print, Archive.
+- [Error codes](/errors/) — all 9 stable codes, English + Hindi.
+- [Playground](/playground/) — try it in your browser (WASM, files never leave the page).

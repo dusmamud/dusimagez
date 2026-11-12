@@ -1,0 +1,14 @@
+[package]
+name = "wasi_shim"
+version = "0.1.0"
+edition = "2021"
+# Standalone helper crate for the WASM build only — NOT a workspace
+# member (see root Cargo.toml `exclude`). It is never published.
+
+# Empty [workspace] table: keeps this crate out of the parent
+# workspace (the root `exclude` entry alone does not stop cargo
+# from treating a nested manifest as a workspace member).
+[workspace]
+
+[lib]
+crate-type = ["rlib"]

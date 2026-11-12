@@ -1,0 +1,21 @@
+[package]
+name = "dusimagez-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Command-line interface for dusimagez — offline image compressor."
+publish = false
+
+[[bin]]
+name = "dusimagez"
+path = "src/main.rs"
+
+[dependencies]
+dusimagez = { path = "../dusimagez" }
+clap.workspace = true
+# Only used by `mock` to write the generated test image.
+image.workspace = true

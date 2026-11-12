@@ -1,0 +1,55 @@
+[workspace]
+members = [
+    "crates/dusimagez",
+    "crates/dusimagez-cli",
+    "crates/dusimagez-ffi",
+    "crates/dusimagez-wasm",
+    "crates/dusimagez-py",
+    "crates/dusimagez-uniffi",
+]
+# Standalone helper crate for the WASM build only (not a member,
+# never published); built by crates/dusimagez-wasm/scripts/wasm-build.sh.
+exclude = ["crates/dusimagez-wasm/wasi-shim"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/dusmamud/dusimagez"
+homepage = "https://github.com/dusmamud/dusimagez"
+authors = ["dusmamud"]
+
+[workspace.dependencies]
+# image 0.25.8: last 0.25.x with rust-version 1.85.0, but the semver
+# requirement "0.25.8" resolves to 0.25.10 in Cargo.lock, and 0.25.10
+# declares rust-version 1.88 — so the workspace MSRV is 1.88, not
+# 1.85. Do not lower rust-version below 1.88 without pinning
+# image = "=0.25.8" first (and verifying the pin builds).
+# Default features OFF: only the formats SPEC section 3 needs, pure Rust.
+# NOTE: the `avif` feature is deliberately NOT enabled — it would pull a
+# second ravif/rav1e build (image 0.25.8 pins ravif 0.11) while this crate
+# encodes AVIF with ravif 0.13 directly. AVIF *decoding* needs the
+# `avif-native` feature (dav1d-sys), which does NOT build here
+# (dav1d-sys needs nasm / a dav1d .pc file; neither is available in this
+# environment — verified 2026-11-12 with a scratch build). AVIF input
+# therefore returns UNSUPPORTED_FORMAT; see crates/dusimagez/src/core.rs.
+# `guess_format` still recognises AVIF magic bytes without the feature.
+image = { version = "0.25.8", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp", "tiff"] }
+# ravif default features include "asm" (rav1e asm -> nasm, which is NOT
+# installed here and cannot be apt-installed — rav1e 0.8.1's build script
+# hard-fails without it). Disable defaults; keep "threading" (pure Rust
+# rayon). AVIF encode still works, just slower (no SIMD asm).
+ravif = { version = "0.13", default-features = false, features = ["threading"] }
+rgb = "0.8"
+# imgref::Img is the buffer type ravif's encode_rgba takes.
+imgref = "1"
+# Lossy WebP (the `image` crate's WebP encoder is lossless-only).
+webp = "0.3"
+# PNG palette quantisation (libimagequant, plain C — builds with cc).
+imagequant = "4"
+# Palette PNGs are written with the `png` crate directly (the `image`
+# crate's PngEncoder has no indexed-colour path). 0.18 matches image 0.25.8.
+png = "0.18"
+clap = { version = "4", features = ["derive"] }

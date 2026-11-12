@@ -1,0 +1,91 @@
+---
+title: Options reference
+description: Full CompressOptions reference for dusimagez — every field, its type, its default, and what it does.
+---
+
+Every option below is a field of `CompressOptions`. The same field names,
+values and defaults apply in Rust, JavaScript, Python, Go, PHP, Kotlin and
+Swift — only the spelling of the surrounding code changes (see the
+quickstarts).
+
+## Quality and format
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `quality` | `u8`, 1–100 | `80` | JPEG/WebP quality. Outside 1–100 → `INVALID_QUALITY`. PNG ignores this and uses `png_compression_level` + `palette`. |
+| `format` | `ImageFormat` or null | keep input format | Explicit output format overrides the input format. Values: `jpeg`, `png`, `webp`, `avif`, `gif`, `bmp`. |
+| `lossless` | `bool` | `false` | WebP/PNG only. Ignored (not an error) for other formats. |
+| `effort` | `u8` | `6` | WebP 0–6; AVIF speed 0–10. Higher = smaller file, slower encode. |
+| `progressive` | `bool` | `false` | JPEG progressive / PNG interlaced. |
+| `subsampling` | `S444 \| S422 \| S420` | `S420` for JPEG quality < 90, `S444` otherwise | Chroma subsampling (JPEG). `S420` halves colour resolution and is the classic size saver; `S444` keeps full colour. |
+
+## PNG
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `png_compression_level` | `u8`, 0–9 | `6` | PNG compression level. 9 is smallest and slowest. |
+| `palette` | `bool` | `false` | Quantise PNG to a 256-colour palette. Helps photographic PNGs; can make an already-tiny flat PNG larger (see the [guide](/guide/)). |
+
+## Presets and target size
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `preset` | `Web \| Social \| Print \| Archive` or null | none | Sets quality/effort/subsampling defaults; explicit fields override it. Exact values: [Presets](/presets/). |
+| `target_bytes` | `u64` or null | none | Target-size search via the one-call path (same search as `compress_to_size`). |
+
+## Resize
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `max_width` | `u32` or null | none | Downscale-only, never upscale; aspect preserved. |
+| `max_height` | `u32` or null | none | Downscale-only, never upscale; aspect preserved. |
+
+Set one or both. If the image is already within both limits, dimensions
+are unchanged and the report's `resized` field is `false`.
+
+## Metadata, orientation, DPI
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `strip_metadata` | `All \| KeepExif \| KeepIcc \| KeepAll` | `All` | Which metadata survives compression. |
+| `auto_orient` | `bool` | `true` | Apply EXIF orientation on load, so the output is upright. |
+| `dpi` | `(u32, u32)` or null | none | Set DPI on JPEG/PNG output where supported. |
+
+## Safety limits
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `max_pixels` | `u64` | `120_000_000` | Images with more pixels are refused with `IMAGE_TOO_LARGE`. |
+| `max_dimension` | `u32` | `16000` | Images wider or taller than this are refused with `IMAGE_TOO_LARGE`. |
+
+These exist because the whole image lives in memory — they stop a
+gigapixel input from exhausting RAM. Lower them if you run in a
+memory-constrained environment.
+
+## Enums
+
+- `ImageFormat`: `jpeg`, `png`, `webp`, `avif`, `gif`, `bmp`
+- `Subsampling`: `S444`, `S422`, `S420`
+- `Preset`: `Web`, `Social`, `Print`, `Archive`
+- `StripMetadata`: `All`, `KeepExif`, `KeepIcc`, `KeepAll`
+
+## Report fields
+
+`compress_with_report` (and `bulk_compress` per item) returns:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `output` | bytes | The compressed image bytes. |
+| `original_size` | `u64` | Input size in bytes. |
+| `output_size` | `u64` | Output size in bytes. |
+| `saved_bytes` | `u64` | `original_size - output_size`. |
+| `saved_percent` | `f32` | `100 * saved_bytes / original_size`. |
+| `format` | `ImageFormat` | Output format. |
+| `width`, `height` | `u32` | Output dimensions. |
+| `quality_used` | `u8` | Quality the encoder actually used. |
+| `resized` | `bool` | True only if the dimensions changed. |
+
+## Info fields
+
+`get_image_info` returns `format`, `width`, `height`, `has_alpha`,
+`colour_type` and `file_size` — without decoding the full pixel data.

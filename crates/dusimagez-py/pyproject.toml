@@ -1,0 +1,28 @@
+[build-system]
+requires = ["maturin>=1,<2"]
+build-backend = "maturin"
+
+[project]
+name = "dusimagez"
+version = "0.1.0"
+description = "Offline image compressor — reduce image file size with maximum control. One Rust core, no network, no uploads."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "dusmamud" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+pydantic = ["pydantic>=2"]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/dusmamud/dusimagez"
+
+[tool.maturin]
+features = ["pyo3/abi3-py310"]
+module-name = "dusimagez._native"
+python-source = "python"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

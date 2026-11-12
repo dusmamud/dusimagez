@@ -1,0 +1,31 @@
+[package]
+name = "dusimagez"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Offline image compressor — reduce file size with maximum control. One Rust core, no network."
+keywords = ["image", "compress", "jpeg", "png", "webp", "avif"]
+categories = ["multimedia", "command-line-utilities"]
+publish = true
+
+[lib]
+name = "dusimagez"
+path = "src/lib.rs"
+
+[dependencies]
+image.workspace = true
+ravif.workspace = true
+rgb.workspace = true
+imgref.workspace = true
+webp.workspace = true
+imagequant.workspace = true
+png.workspace = true
+
+[dev-dependencies]
+# Same minimal feature set as the library (default features would pull
+# exr/qoi/rayon/... into test builds via feature unification).
+image = { version = "0.25.8", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp", "tiff"] }

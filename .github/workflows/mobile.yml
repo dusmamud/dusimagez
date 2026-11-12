@@ -1,0 +1,72 @@
+name: Mobile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/dusimagez/**"
+      - "crates/dusimagez-uniffi/**"
+      - "packages/kotlin/**"
+      - "packages/swift/**"
+      - "shared/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "crates/dusimagez/**"
+      - "crates/dusimagez-uniffi/**"
+      - "packages/kotlin/**"
+      - "packages/swift/**"
+      - "shared/**"
+      - ".github/workflows/mobile.yml"
+
+jobs:
+  android:
+    name: Kotlin (Android library + JUnit)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Build host UniFFI cdylib for JVM unit tests
+        # No Gradle wrapper is committed (no gradlew); the Android job
+        # uses the system Gradle from setup-gradle instead. The JVM
+        # unit tests load libuniffi_dusimagez.so via
+        # DUSIMAGEZ_NATIVE_DIR (see library/build.gradle.kts); without
+        # this step they would skip via JUnit assumptions.
+        run: cargo build --release -p dusimagez-uniffi
+      - name: Build Android library + JUnit tests
+        working-directory: packages/kotlin
+        env:
+          DUSIMAGEZ_NATIVE_DIR: ${{ github.workspace }}/target/release
+        run: gradle :library:testDebugUnitTest --stacktrace
+
+  swift:
+    # iOS/macOS builds REQUIRE a macOS runner — never a Linux runner.
+    name: Swift (SwiftPM build + XCTest)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build UniFFI static library for SwiftPM
+        # The DusimagezFFI system-library target links
+        # libuniffi_dusimagez.a (the scaffolding cdylib/staticlib
+        # from crates/dusimagez-uniffi) — NOT libdusimagez.a, which
+        # has no UniFFI symbols.
+        run: cargo build --release -p dusimagez-uniffi
+      - name: SwiftPM build
+        working-directory: packages/swift
+        run: swift build -Xlinker -L${{ github.workspace }}/target/release -Xlinker -luniffi_dusimagez
+      - name: XCTest
+        working-directory: packages/swift
+        run: swift test -Xlinker -L${{ github.workspace }}/target/release -Xlinker -luniffi_dusimagez

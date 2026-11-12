@@ -1,0 +1,59 @@
+---
+title: Formats
+description: dusimagez format support — which image formats can be read, which can be written, and the v0.1.0 limits.
+---
+
+## Matrix
+
+| Format | Read (input) | Write (output) |
+|---|---|---|
+| JPEG | yes | yes |
+| PNG | yes | yes |
+| WebP | yes | yes |
+| AVIF | yes | yes |
+| GIF | yes | yes |
+| BMP | yes | yes |
+| TIFF | yes | no |
+
+Set the output format with the `format` option (or `--format` on the CLI).
+If you do not set it, the output keeps the input format.
+
+```bash
+# PNG in, WebP out, lossless
+dusimagez compress in.png out.webp --format webp --lossless
+
+# Any input, JPEG out at quality 80
+dusimagez compress in.png out.jpg --format jpeg
+```
+
+## v0.1.0 limits — stated plainly
+
+- **No HEIC.** Reading or writing HEIC is not supported in v0.1.0
+  (libheif + licence). An HEIC input fails with `UNSUPPORTED_FORMAT`.
+- **AVIF encode is lossy-only / 8-bit.** This is a limit of the underlying
+  encoder crate, not a choice: no lossless AVIF, no 10-bit AVIF in v0.1.0.
+  AVIF *decoding* is unaffected.
+- **GIF encode is first-frame only.** An animated GIF input compresses to
+  a still GIF of its first frame. Animation is not preserved.
+- **TIFF is input-only.** You can compress a TIFF by converting it to
+  another format (`--format jpeg`, for example), but dusimagez cannot write
+  TIFF in v0.1.0.
+- **Whole image in memory.** There is no streaming mode; a very large image
+  is refused by the `max_pixels` / `max_dimension` limits
+  (`IMAGE_TOO_LARGE`) rather than being processed in chunks.
+
+## Format notes
+
+- **JPEG** — the workhorse. Quality, subsampling, progressive and
+  target-size search all apply. No transparency: converting a transparent
+  PNG to JPEG drops the alpha channel.
+- **PNG** — lossless by nature. Controlled by `png_compression_level`
+  (0–9) and `palette` (quantise to 256 colours), not by `quality`.
+  `progressive` means interlaced PNG.
+- **WebP** — lossy or lossless (`lossless: true`), with `effort` 0–6.
+  The best all-round choice when you control both ends.
+- **AVIF** — the smallest lossy files in v0.1.0, at the cost of slower
+  encoding (`effort` is the AVIF speed, 0–10). Lossy / 8-bit only.
+- **GIF** — for simple graphics. First frame only on output.
+- **BMP** — uncompressed output; useful as a compatibility target, not
+  for saving space.

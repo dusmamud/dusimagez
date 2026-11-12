@@ -1,0 +1,148 @@
+---
+title: Compressor guide
+description: How to compress images with dusimagez — CLI, target file size, presets, resize, metadata and batch mode.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This guide covers the compressor itself: the CLI, the three ways to
+compress, and the controls you will reach for most often. The full field
+reference is on the [Options](/options/) page.
+
+## The three operations
+
+| Operation | What it does | When to use it |
+|---|---|---|
+| `compress_image` | Compress with the options you give | You know the quality / preset you want |
+| `compress_to_size` | Compress until the file fits a byte budget | "This must be under 200 KB" |
+| `compress_with_report` | Same as `compress_image`, plus a full before/after report | You need to show or log the savings |
+
+Plus `get_image_info` (inspect without writing anything) and
+`bulk_compress` (compress many images, one result per input, partial
+failures reported per item — the batch never aborts).
+
+## CLI
+
+```bash
+# Default: quality 80, keep the input format
+dusimagez compress input.jpg output.jpg
+
+# Pick a quality
+dusimagez compress input.jpg output.jpg --quality 50
+
+# Pick a preset instead of a number (see Presets)
+dusimagez compress input.jpg output.jpg --preset web
+
+# Convert format at the same time
+dusimagez compress input.png output.webp --format webp --lossless
+
+# Inspect an image
+dusimagez info input.jpg
+
+# Generate deterministic test images (solid / gradient / noise)
+dusimagez mock --kind gradient --width 800 --height 600 --format jpeg --seed 2 -o test.jpg
+```
+
+Every CLI flag mirrors a `CompressOptions` field 1:1 — see
+[Options](/options/).
+
+## Compress to a target size
+
+This is the operation that makes dusimagez different from a bare quality
+slider. Give it a byte budget and it works out how to fit:
+
+```bash
+dusimagez compress input.jpg output.jpg --target-bytes 200000
+```
+
+```rust
+let out = dusimagez::compress_to_size(&bytes, 200_000, &CompressOptions::default())?;
+```
+
+How it works:
+
+1. Binary search on quality (max 10 steps) for the highest quality that
+   fits the budget.
+2. If even the lowest quality is still too big, downscale in 10% steps
+   (never below 10% of the original dimensions, never upscale).
+3. If it still does not fit, fail with `TARGET_SIZE_UNREACHABLE` — an
+   honest error, not a silently oversized file.
+
+The same search runs through the one-call path: set `target_bytes` in
+`CompressOptions` and call `compress_image` / `compress_with_report`.
+
+<Aside type="tip">
+A target size is a budget, not a promise of quality. A noisy photo at
+100 KB will look worse than a flat illustration at 100 KB — the search
+spends the budget as well as it can, and tells you the quality it actually
+used in the report (`quality_used`).
+</Aside>
+
+## Presets
+
+Four named starting points — Web (small files), Social (balanced), Print
+(high quality), Archive (near-lossless). A preset sets quality, effort and
+subsampling defaults; any option you set explicitly overrides that field.
+See [Presets](/presets/) for the exact values.
+
+```bash
+dusimagez compress photo.jpg web.jpg --preset web
+dusimagez compress photo.jpg print.jpg --preset print
+```
+
+## Resize (downscale-only)
+
+`max_width` / `max_height` shrink an image that is too big and leave a
+smaller image untouched — dusimagez never upscales.
+
+```bash
+dusimagez compress big.jpg small.jpg --max-width 1200
+```
+
+Aspect ratio is always preserved. The report's `resized` field tells you
+whether the dimensions actually changed.
+
+## Metadata and orientation
+
+By default dusimagez **strips all metadata** (`strip_metadata: All`) and
+**applies EXIF orientation** (`auto_orient: true`) so the output is upright
+without relying on an EXIF tag. To keep metadata, say so explicitly:
+
+```bash
+# Keep EXIF (copyright, camera data) but strip the rest
+dusimagez compress in.jpg out.jpg --strip-metadata keep-exif
+
+# Keep everything
+dusimagez compress in.jpg out.jpg --strip-metadata keep-all
+```
+
+## Batch mode
+
+`bulk_compress` takes many inputs and returns one result per input, in the
+same order. One bad file does not abort the batch — its result is an error
+(`EMPTY_INPUT`, `INVALID_IMAGE`, …) while the good files still compress.
+
+## PNG notes
+
+- `quality` does not apply to PNG the way it does to JPEG. PNG uses
+  `png_compression_level` (0–9, default 6) and `palette` (quantise to a
+  256-colour palette).
+- Palette quantise on an already-tiny PNG can make the file *larger* — that
+  is correct behaviour, not a bug: palette helps photographic PNGs, not
+  flat ones. The shared test vectors cover exactly this case.
+- `progressive` on PNG means interlaced output.
+
+## What the report tells you
+
+```rust
+let report = dusimagez::compress_with_report(&bytes, &options)?;
+println!("{} -> {} bytes (saved {}%, quality {})",
+    report.original_size, report.output_size,
+    report.saved_percent, report.quality_used);
+if report.resized {
+    println!("resized to {}x{}", report.width, report.height);
+}
+```
+
+`saved_bytes` and `saved_percent` are computed from the real sizes:
+`saved_percent = 100 * (original - output) / original`.

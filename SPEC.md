@@ -39,6 +39,11 @@ bulk_compress(inputs: &[Vec<u8>], options: &CompressOptions) -> Vec<Result<Compr
   - `palette: bool` (PNG quantise to palette, default false)
   - `preset: Option<Preset>` (`Web | Social | Print | Archive` — preset
     sets quality/effort/subsampling defaults; explicit fields override it)
+  - Detection of "explicit" is by value: a field still holding its
+    global default (quality 80, effort 6, subsampling S420) counts as
+    unset, so an explicit value equal to the default is treated as
+    unset (e.g. quality 80 + preset Print → 95). See
+    `CompressOptions::resolved` in the core.
   - `target_bytes: Option<u64>` (same as `compress_to_size` via one call)
   - `max_width: Option<u32>`, `max_height: Option<u32>` (downscale-only,
     never upscale; aspect preserved)
@@ -64,8 +69,11 @@ bulk_compress(inputs: &[Vec<u8>], options: &CompressOptions) -> Vec<Result<Compr
 
 `INVALID_IMAGE`, `UNSUPPORTED_FORMAT`, `IMAGE_TOO_LARGE`,
 `TARGET_SIZE_UNREACHABLE`, `INVALID_QUALITY`, `INVALID_DIMENSIONS`,
-`INVALID_ARGUMENT`, `EMPTY_INPUT`.
+`INVALID_ARGUMENT`, `EMPTY_INPUT`, `INVALID_TYPE`.
 Every binding returns the same code + EN message + HI message.
+`INVALID_TYPE` is binding-layer only: the input is not bytes, or an
+option has the wrong type — raised by a binding before it calls the
+core (the core itself never returns it).
 
 ## 5. Layout (v0.1.0 — ALL bindings in v0.1.0, per user order)
 

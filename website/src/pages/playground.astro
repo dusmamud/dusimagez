@@ -1,0 +1,407 @@
+---
+/**
+ * dusimagez playground — run real compression in the browser.
+ *
+ * The Rust core, compiled to WASM with wasm-pack (`--target web`), is
+ * lazy-loaded ONLY on this page, ONLY on first run, from
+ * `/wasm/dusimagez_wasm.js` (built by the WASM worker — see
+ * `public/wasm/README.md`). Files NEVER leave the browser: the WASM runs
+ * locally, and downloads are created with object URLs.
+ *
+ * WASM export names follow SPEC.md exactly (snake_case): compress_image,
+ * compress_to_size, compress_with_report, get_image_info. Options are
+ * passed as plain JS objects. The call shape must match the wasm-bindgen
+ * wrapper the WASM worker ships; if it differs, update `callWasm` below.
+ *
+ * There is NO silent fallback. If the WASM build is missing, the page says
+ * so loudly — both at build time (the banner below, rendered from the
+ * file check in frontmatter) and at runtime (the load error). Silently
+ * pretending to work would be worse.
+ */
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const wasmPresent = existsSync(
+	join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'wasm', 'dusimagez_wasm.js'),
+);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Playground — dusimagez</title>
+		<meta
+			name="description"
+			content="Try dusimagez in your browser: compress an image to a quality or an exact target file size with the Rust core compiled to WebAssembly. Your files never leave the browser."
+		/>
+		<meta property="og:title" content="Playground — dusimagez" />
+		<meta property="og:description" content="Compress images in your browser. No file leaves the page." />
+		<meta property="og:url" content="https://dusimagez.pages.dev/playground/" />
+		<meta property="og:image" content="https://dusimagez.pages.dev/og.svg" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href="https://dusimagez.pages.dev/playground/" />
+		<style>
+			:root { --bg: #0f172a; --card: #1e293b; --ink: #f8fafc; --muted: #94a3b8; --green: #22c55e; --red: #f87171; --amber: #fbbf24; --line: #334155; }
+			* { box-sizing: border-box; }
+			body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+			a { color: #4ade80; }
+			.wrap { max-width: 960px; margin: 0 auto; padding: 0 20px 64px; }
+			header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+			.logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.25rem; color: var(--ink); text-decoration: none; }
+			.logo img { width: 32px; height: 32px; }
+			nav a { color: var(--muted); text-decoration: none; margin-left: 20px; font-weight: 600; }
+			nav a:hover { color: var(--ink); }
+			h1 { font-size: 2rem; margin: 24px 0 4px; }
+			.sub { color: var(--muted); margin: 0 0 24px; }
+			.banner { border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
+			.banner.warn { background: #451a03; border: 1px solid #92400e; color: #fde68a; }
+			.banner.warn code { color: #fef3c7; }
+			.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+			.panel h2 { font-size: 1.05rem; margin: 0 0 12px; }
+			label { display: block; font-weight: 600; margin: 12px 0 4px; }
+			label span { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
+			input[type="file"], input[type="number"], select { width: 100%; background: #020617; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; font-size: 1rem; font-family: inherit; }
+			input[type="file"] { cursor: pointer; }
+			input[type="range"] { width: 100%; }
+			.row { display: flex; gap: 12px; flex-wrap: wrap; }
+			.row > div { flex: 1 1 200px; }
+			.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+			.tabs button { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 9px 18px; cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+			.tabs button[aria-pressed="true"] { background: var(--green); color: #052e12; border-color: var(--green); }
+			.btn { border: none; border-radius: 8px; padding: 13px 22px; font-weight: 700; cursor: pointer; font-size: 1rem; margin-top: 16px; }
+			.btn-primary { background: var(--green); color: #052e12; }
+			.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+			.filelist { margin: 10px 0 0; padding: 0; list-style: none; font-size: 0.95rem; color: var(--muted); }
+			.result { margin-top: 16px; border-radius: 10px; padding: 16px; display: none; }
+			.result.show { display: block; }
+			.result.ok { background: #052e12; border: 1px solid #166534; }
+			.result.err { background: #450a0a; border: 1px solid #991b1b; }
+			.result .verdict { font-weight: 800; font-size: 1.05rem; }
+			.result .verdict.ok { color: var(--green); }
+			.result .verdict.err { color: var(--red); }
+			.result code { color: #e2e8f0; }
+			.result .reason-hi { color: var(--muted); }
+			.result a { display: inline-block; margin: 6px 10px 0 0; font-weight: 700; }
+			.result img { max-width: 100%; border-radius: 8px; margin-top: 12px; display: block; }
+			.preview img { max-width: 100%; max-height: 320px; border-radius: 8px; margin-top: 12px; display: block; }
+			.engine { font-size: 0.85rem; color: var(--muted); margin-top: 12px; }
+			.note { background: #451a03; border: 1px solid #92400e; border-radius: 12px; padding: 16px 18px; margin-top: 32px; color: #fde68a; font-size: 0.95rem; }
+			.note a { color: #fcd34d; }
+			footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 0.9rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<header>
+				<a class="logo" href="/"><img src="/favicon.svg" alt="" /> dusimagez</a>
+				<nav>
+					<a href="/overview/">Docs</a>
+					<a href="/playground/">Playground</a>
+					<a href="https://github.com/dusmamud/dusimagez">GitHub</a>
+				</nav>
+			</header>
+
+			<h1>Playground</h1>
+			<p class="sub">
+				Run real compression in your browser — the same Rust core as the
+				package, compiled to WebAssembly. <strong>Your files never leave this
+				page:</strong> nothing is uploaded anywhere, and the result is
+				downloaded straight from your browser.
+			</p>
+
+			{!wasmPresent && (
+				<div class="banner warn" role="alert">
+					<strong>WASM build not yet present — run the build step.</strong>
+					<br />
+					The playground needs the compiled WASM core
+					(<code>public/wasm/dusimagez_wasm.js</code>), and it has not been
+					built yet. Build it with
+					<code>wasm-pack build --target web crates/dusimagez-wasm</code>
+					(see <code>website/public/wasm/README.md</code>), then rebuild the
+					site. The controls below are disabled until then — this page will
+					not pretend to compress anything.
+				</div>
+			)}
+
+			<div class="tabs" role="group" aria-label="Operation" id="tabs"></div>
+
+			<div class="panel">
+				<h2>1. Pick an image</h2>
+				<label for="file-input">Image file <span id="file-hint">(one file)</span></label>
+				<input id="file-input" type="file" accept="image/*" />
+				<ul class="filelist" id="file-list"></ul>
+				<div class="preview" id="preview"></div>
+				<p class="engine" id="info-line">No file loaded yet.</p>
+				<p>
+					No image handy?
+					<button type="button" id="mock-btn" style="background:none;border:none;color:#4ade80;cursor:pointer;padding:0;font-size:1rem;text-decoration:underline;">Generate a test image</button>
+					(a gradient, made in your browser — test data only).
+				</p>
+			</div>
+
+			<div class="panel" id="opts-panel">
+				<h2>2. Options</h2>
+				<div id="opts"></div>
+				<button type="button" class="btn btn-primary" id="run-btn" disabled>Run</button>
+				<p class="engine" id="engine">Engine: not loaded yet — it loads on first run.</p>
+			</div>
+
+			<div class="panel" id="out-panel" style="display:none">
+				<h2>3. Result</h2>
+				<div id="result" class="result" aria-live="polite"></div>
+			</div>
+
+			<div class="note">
+				<strong>Honest limits:</strong> the playground runs the real v0.1.0 core,
+				so the same limits apply — no HEIC, AVIF encode is lossy-only / 8-bit,
+				GIF encode is first-frame only for animated input, and the whole image
+				lives in memory.
+				<a href="/formats/">Read the formats page →</a>
+			</div>
+
+			<footer>
+				<span>dusimagez — open source, by dusmamud.</span>
+				<span><a href="/overview/">Docs</a> · <a href="/">Home</a> · <a href="https://github.com/dusmamud/dusimagez">GitHub</a></span>
+			</footer>
+		</div>
+
+		<script define:vars={{ wasmPresent }}>
+			// ------------------------------------------------------------ WASM
+			// Lazy-loaded ONLY on this page, ONLY on first run.
+			// If the build is missing, this throws and we show a loud error —
+			// there is deliberately NO fallback that pretends to work.
+			const WASM_PRESENT_AT_BUILD = wasmPresent;
+			let wasmModule = undefined; // undefined = not tried, null = failed
+			async function loadWasm() {
+				if (wasmModule !== undefined) {
+					if (wasmModule === null) throw new Error('WASM engine failed to load earlier — the playground build is missing. Run the build step (see public/wasm/README.md).');
+					return wasmModule;
+				}
+				try {
+					const mod = await import(/* @vite-ignore */ '/wasm/dusimagez_wasm.js');
+					await mod.default();
+					wasmModule = mod;
+					document.querySelector('#engine').textContent = 'Engine: WASM (Rust core, dusimagez).';
+					return mod;
+				} catch (e) {
+					wasmModule = null;
+					document.querySelector('#engine').textContent = 'Engine: FAILED TO LOAD — the WASM build is missing. See the error below.';
+					throw new Error(`Could not load the WASM engine (/wasm/dusimagez_wasm.js): ${e.message}. The playground needs the WASM build step first — see public/wasm/README.md.`);
+				}
+			}
+
+			function parseThrown(e) {
+				// WASM errors are thrown as JSON strings:
+				// {"ok":false,"code":"...","message_en":"...","message_hi":"..."}
+				if (typeof e === 'string') {
+					try { return JSON.parse(e); } catch { return { code: 'OPERATION_FAILED', message_en: e, message_hi: '' }; }
+				}
+				if (e && e.message) return { code: 'OPERATION_FAILED', message_en: e.message, message_hi: '' };
+				return { code: 'OPERATION_FAILED', message_en: String(e), message_hi: '' };
+			}
+
+			// -------------------------------------------------------------- ops
+			const OPS = [
+				{ id: 'compress', label: 'Compress', hint: '(one file)' },
+				{ id: 'compress_to_size', label: 'Compress to size', hint: '(one file)' },
+				{ id: 'get_info', label: 'Info', hint: '(one file)' },
+			];
+
+			let currentOp = 'compress';
+			let file = null; // { name, bytes: Uint8Array, url }
+
+			const $ = (s) => document.querySelector(s);
+			const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			const fmtBytes = (n) => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(2)} MB`;
+
+			function renderTabs() {
+				const el = $('#tabs');
+				el.innerHTML = '';
+				for (const op of OPS) {
+					const b = document.createElement('button');
+					b.type = 'button';
+					b.textContent = op.label;
+					b.setAttribute('aria-pressed', String(op.id === currentOp));
+					b.addEventListener('click', () => setOp(op.id));
+					el.appendChild(b);
+				}
+			}
+
+			function setOp(id) {
+				currentOp = id;
+				const op = OPS.find((o) => o.id === id);
+				$('#file-hint').textContent = op.hint;
+				renderTabs();
+				renderOpts();
+				updateRunBtn();
+			}
+
+			function optField(id, label, inner) {
+				return `<label for="${id}">${label}</label>${inner}`;
+			}
+
+			function renderOpts() {
+				const el = $('#opts');
+				if (currentOp === 'get_info') {
+					el.innerHTML = '<p style="color:var(--muted)">No options — info just inspects the file.</p>';
+					return;
+				}
+				const quality = optField('opt-quality', 'Quality <span>(1–100, default 80)</span>',
+					`<input id="opt-quality" type="range" min="1" max="100" value="80" /> <span id="quality-val">80</span>`);
+				const format = optField('opt-format', 'Output format <span>(blank = keep input format)</span>',
+					`<select id="opt-format"><option value="">Keep input format</option><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP</option><option value="avif">AVIF</option><option value="gif">GIF</option><option value="bmp">BMP</option></select>`);
+				const preset = optField('opt-preset', 'Preset <span>(sets quality/effort/subsampling defaults; explicit fields win)</span>',
+					`<select id="opt-preset"><option value="">None</option><option value="Web">Web</option><option value="Social">Social</option><option value="Print">Print</option><option value="Archive">Archive</option></select>`);
+				const target = currentOp === 'compress_to_size'
+					? optField('opt-target', 'Target size <span>(bytes — the file must fit this budget)</span>',
+						`<input id="opt-target" type="number" min="1" value="200000" />`)
+					: '';
+				el.innerHTML = `<div class="row"><div>${quality}</div><div>${format}</div></div><div class="row"><div>${preset}</div><div>${target}</div></div>`;
+				const q = $('#opt-quality');
+				if (q) q.addEventListener('input', () => { $('#quality-val').textContent = q.value; });
+			}
+
+			function collectOptions() {
+				const o = {};
+				const q = $('#opt-quality');
+				if (q) o.quality = Number(q.value);
+				const f = $('#opt-format');
+				if (f && f.value) o.format = f.value;
+				const p = $('#opt-preset');
+				if (p && p.value) o.preset = p.value;
+				return o;
+			}
+
+			function updateRunBtn() {
+				$('#run-btn').disabled = !file || !WASM_PRESENT_AT_BUILD;
+			}
+
+			function showResult(ok, html) {
+				const out = $('#out-panel');
+				const res = $('#result');
+				out.style.display = 'block';
+				res.className = 'result show ' + (ok ? 'ok' : 'err');
+				res.innerHTML = html;
+			}
+
+			function showError(parsed) {
+				showResult(false,
+					`<div class="verdict err">Failed — ${esc(parsed.code)}</div>` +
+					`<div><code>${esc(parsed.message_en)}</code></div>` +
+					(parsed.message_hi ? `<div class="reason-hi">${esc(parsed.message_hi)}</div>` : ''));
+			}
+
+			function downloadLink(bytes, name, label) {
+				const blob = new Blob([bytes], { type: 'application/octet-stream' });
+				const url = URL.createObjectURL(blob);
+				return `<a href="${url}" download="${esc(name)}">${esc(label)}</a>`;
+			}
+
+			async function runOp() {
+				if (!file) return;
+				const btn = $('#run-btn');
+				btn.disabled = true;
+				btn.textContent = 'Running…';
+				try {
+					const mod = await loadWasm();
+					const opts = collectOptions();
+					if (currentOp === 'get_info') {
+						if (typeof mod.get_image_info !== 'function') throw new Error('WASM export get_image_info is missing — the WASM build does not match SPEC.md.');
+						const info = mod.get_image_info(file.bytes, opts);
+						const i = typeof info === 'string' ? JSON.parse(info) : info;
+						showResult(true,
+							`<div class="verdict ok">${esc(i.format || 'image')} — ${esc(i.width)}×${esc(i.height)}</div>` +
+							`<div>File size: <code>${fmtBytes(file.bytes.length)}</code></div>` +
+							(i.has_alpha !== undefined ? `<div>Has alpha: <code>${esc(i.has_alpha)}</code></div>` : '') +
+							(i.colour_type ? `<div>Colour type: <code>${esc(i.colour_type)}</code></div>` : ''));
+					} else if (currentOp === 'compress_to_size') {
+						if (typeof mod.compress_to_size !== 'function') throw new Error('WASM export compress_to_size is missing — the WASM build does not match SPEC.md.');
+						const target = Number(($('#opt-target') || {}).value || 200000);
+						const out = mod.compress_to_size(file.bytes, target, opts);
+						showCompressResult(out, target);
+					} else {
+						if (typeof mod.compress_with_report !== 'function') throw new Error('WASM export compress_with_report is missing — the WASM build does not match SPEC.md.');
+						const report = mod.compress_with_report(file.bytes, opts);
+						const r = typeof report === 'string' ? JSON.parse(report) : report;
+						showCompressResult(r.output, null, r);
+					}
+				} catch (e) {
+					showError(parseThrown(e));
+				} finally {
+					btn.disabled = false;
+					btn.textContent = 'Run';
+					updateRunBtn();
+				}
+			}
+
+			function showCompressResult(outBytes, target, report) {
+				const out = outBytes instanceof Uint8Array ? outBytes : new Uint8Array(outBytes);
+				const orig = file.bytes.length;
+				const saved = orig - out.length;
+				const pct = orig ? (100 * saved / orig) : 0;
+				const ext = (report && report.format) || 'bin';
+				const name = file.name.replace(/\.[^.]+$/, '') + '-compressed.' + ext;
+				let html = `<div class="verdict ok">${fmtBytes(orig)} → ${fmtBytes(out.length)} — saved ${fmtBytes(Math.max(saved, 0))} (${pct.toFixed(1)}%)</div>`;
+				if (report) {
+					html += `<div>Quality used: <code>${esc(report.quality_used)}</code> · Format: <code>${esc(report.format)}</code> · Size: <code>${esc(report.width)}×${esc(report.height)}</code> · Resized: <code>${esc(report.resized)}</code></div>`;
+				}
+				if (target) html += `<div>Target was <code>${fmtBytes(target)}</code> — ${out.length <= target ? 'fits.' : 'OVER TARGET (this is a bug — please report it).'}</div>`;
+				html += `<div>${downloadLink(out, name, 'Download compressed file')}</div>`;
+				const url = URL.createObjectURL(new Blob([out], { type: 'image/*' }));
+				html += `<img src="${url}" alt="Compressed preview" />`;
+				showResult(true, html);
+			}
+
+			// ------------------------------------------------------------ input
+			function setFile(name, bytes) {
+				file = { name, bytes };
+				$('#file-list').innerHTML = `<li>${esc(name)} — ${fmtBytes(bytes.length)}</li>`;
+				const url = URL.createObjectURL(new Blob([bytes], { type: 'image/*' }));
+				$('#preview').innerHTML = `<img src="${url}" alt="Preview" />`;
+				$('#info-line').textContent = `${name} — ${fmtBytes(bytes.length)} loaded.`;
+				updateRunBtn();
+			}
+
+			function makeGradient() {
+				// 320x240 gradient, generated in-browser (test data only).
+				const w = 320, h = 240;
+				const canvas = document.createElement('canvas');
+				canvas.width = w; canvas.height = h;
+				const ctx = canvas.getContext('2d');
+				const img = ctx.createImageData(w, h);
+				for (let y = 0; y < h; y++) {
+					for (let x = 0; x < w; x++) {
+						const i = (y * w + x) * 4;
+						img.data[i] = Math.floor((x * 255) / (w - 1));
+						img.data[i + 1] = Math.floor((y * 255) / (h - 1));
+						img.data[i + 2] = 128;
+						img.data[i + 3] = 255;
+					}
+				}
+				ctx.putImageData(img, 0, 0);
+				canvas.toBlob((blob) => {
+					blob.arrayBuffer().then((buf) => setFile('gradient-test.png', new Uint8Array(buf)));
+				}, 'image/png');
+			}
+
+			$('#file-input').addEventListener('change', async (e) => {
+				const f = e.target.files && e.target.files[0];
+				if (!f) return;
+				const buf = await f.arrayBuffer();
+				setFile(f.name, new Uint8Array(buf));
+			});
+			$('#mock-btn').addEventListener('click', makeGradient);
+			$('#run-btn').addEventListener('click', runOp);
+
+			renderTabs();
+			renderOpts();
+			if (!WASM_PRESENT_AT_BUILD) {
+				$('#engine').textContent = 'Engine: WASM build not yet present — run the build step (see public/wasm/README.md).';
+			}
+			updateRunBtn();
+		</script>
+	</body>
+</html>

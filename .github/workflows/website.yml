@@ -1,0 +1,57 @@
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - ".github/workflows/website.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "website/**"
+      - ".github/workflows/website.yml"
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install deps
+        working-directory: website
+        run: npm ci
+      - name: Build
+        working-directory: website
+        run: npm run build
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: build
+    # Deploy only on pushes to main, never on PRs.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install deps
+        working-directory: website
+        run: npm ci
+      - name: Build
+        working-directory: website
+        run: npm run build
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy website/dist --project-name=dusimagez

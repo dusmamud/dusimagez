@@ -1,0 +1,67 @@
+---
+title: Quickstart — JavaScript / TypeScript
+description: Use dusimagez from JavaScript and TypeScript — WASM wrapper with Zod schemas, same Rust core in the browser and Node.
+---
+
+```bash
+npm install dusimagez
+```
+
+Requires Node 18+. In the browser the same core runs as WebAssembly —
+try it on the [Playground](/playground/) (your files never leave the page).
+
+## Compress
+
+```ts
+import { readFile, writeFile } from 'node:fs/promises';
+import { compressImage } from 'dusimagez';
+
+const input = await readFile('input.jpg');
+const output = await compressImage(input, { quality: 80 });
+await writeFile('output.jpg', output);
+```
+
+Options are validated with Zod — an invalid option (for example,
+`quality: 0`) fails before any encoding starts.
+
+## Compress to a target size
+
+```ts
+import { compressToSize } from 'dusimagez';
+
+// 200 KB or less, or a thrown error with code TARGET_SIZE_UNREACHABLE.
+const output = await compressToSize(input, 200_000, {});
+```
+
+## Report and info
+
+```ts
+import { compressWithReport, getImageInfo } from 'dusimagez';
+
+const info = await getImageInfo(input);
+console.log(info.format, info.width, info.height);
+
+const report = await compressWithReport(input, { preset: 'Web' });
+console.log(
+  `${report.originalSize} -> ${report.outputSize} bytes, ` +
+  `saved ${report.savedPercent.toFixed(1)}%, quality ${report.qualityUsed}`,
+);
+```
+
+## Errors
+
+Failures are thrown as JSON strings:
+
+```json
+{"ok": false, "code": "EMPTY_INPUT", "message_en": "No input bytes were provided.", "message_hi": "कोई इनपुट बाइट्स नहीं दिए गए।"}
+```
+
+Parse the thrown string and branch on `code` — see
+[Error codes](/errors/) for all 9 codes.
+
+## Options
+
+Option names are camelCase in JavaScript (`maxWidth`, `targetBytes`,
+`pngCompressionLevel`, `stripMetadata`, `autoOrient`, `maxPixels`,
+`maxDimension`) and map 1:1 to the Rust `CompressOptions` fields — see the
+[Options reference](/options/).

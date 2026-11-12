@@ -1,0 +1,33 @@
+# release-plz configuration for dusimagez.
+#
+# GitHub releases: ENABLED (git_release_enable = true).
+# When release-plz publishes a new version it ALSO creates a GitHub
+# Release page (tag + release notes from the changelog). This is the
+# opposite of dusrelimage, where git_release_enable was false and no
+# Release page was created despite workflow comments claiming otherwise.
+# If this is ever flipped to false, no GitHub Release page is created —
+# crates.io publish still happens, but there is no release page.
+#
+# Changelog: default release-plz format. No custom body template and
+# deliberately NO {{ date }} / {{ changes }} variables — those break
+# release-plz templating.
+#
+# Version lockstep: v0.1.0 is the first release. The CHANGELOG already
+# lists 0.1.0 as released, so release-plz finds "nothing to release"
+# until the first post-0.1.0 change; it will NOT bump the core before
+# the first publish. From the first real change onward, release-plz
+# bumps versions from conventional commits as usual.
+[workspace]
+git_release_enable = true
+git_release_name = "v{{ version }}"
+git_release_body = "{{ changelog }}"
+git_release_draft = false
+git_release_latest = true
+# Do not open a release PR until there is a real change to release.
+# (release-plz already no-ops when nothing changed; this is explicit.)
+pr_labels = ["release"]
+
+[changelog]
+# Default release-plz changelog format (Keep a Changelog style).
+# No custom template — see header note about {{ date }}/{{ changes }}.
+protect_breaking_commits = true

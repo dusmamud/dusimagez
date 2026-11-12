@@ -1,0 +1,51 @@
+name: Go
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/dusimagez-ffi/**"
+      - "crates/dusimagez/**"
+      - "packages/go/**"
+      - "shared/**"
+      - ".github/workflows/go.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "crates/dusimagez-ffi/**"
+      - "crates/dusimagez/**"
+      - "packages/go/**"
+      - "shared/**"
+      - ".github/workflows/go.yml"
+
+jobs:
+  go:
+    name: cgo + go test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Build FFI shared library
+        run: cargo build --release -p dusimagez-ffi
+      - name: Build CLI (exact vector fixtures)
+        # packages/go looks for target/release/dusimagez to generate
+        # exact mock fixtures; without it the vector tests fall back
+        # to in-test fixtures and skip size bounds.
+        run: cargo build --release -p dusimagez-cli
+      - name: Stage .so for cgo
+        run: |
+          mkdir -p packages/go/lib
+          cp target/release/libdusimagez_ffi.so packages/go/lib/
+      - name: Go vet + test
+        working-directory: packages/go
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          go vet ./...
+          go test ./...

@@ -1,0 +1,82 @@
+---
+title: Quickstart — PHP
+description: Use dusimagez from PHP — FFI wrapper over the compiled Rust core.
+---
+
+```bash
+composer require dusmamud/dusimagez
+```
+
+Requires PHP 8.1+ with the FFI extension enabled.
+
+## The prebuilt library step — read this first
+
+Composer installs PHP code only; it cannot install the compiled Rust
+library the wrapper calls. Before using the package, build (or download)
+the shared library and point the wrapper at it:
+
+```bash
+# Build the C library from the repo (produces libdusimagez_ffi.so)
+cargo build -p dusimagez-ffi --release
+```
+
+```php
+<?php
+use Dusrel\Dusimagez\Dusimagez;
+
+// Point at the compiled library, then use it.
+$dz = new Dusimagez('/path/to/libdusimagez_ffi.so');
+```
+
+There is no Composer-direct install of the Rust `.so` — any guide that
+claims otherwise is wrong.
+
+## Compress
+
+```php
+<?php
+$input = file_get_contents('input.jpg');
+$output = $dz->compress($input, ['quality' => 80]);
+file_put_contents('output.jpg', $output);
+```
+
+## Compress to a target size
+
+```php
+<?php
+// 200 KB or less, or a DusimagezException with code TARGET_SIZE_UNREACHABLE.
+$output = $dz->compressToSize($input, 200_000, []);
+```
+
+## Report and info
+
+```php
+<?php
+$info = $dz->getInfo($input);
+// $info['format'], $info['width'], $info['height']
+
+$report = $dz->compressWithReport($input, ['preset' => 'Web']);
+// $report['original_size'], $report['output_size'],
+// $report['saved_percent'], $report['quality_used'], $report['resized']
+```
+
+## Batch
+
+```php
+<?php
+$results = $dz->bulkCompress([$data1, $data2, ''], []);
+foreach ($results as $r) {
+    if ($r['ok']) {
+        // $r['report']['saved_bytes']
+    } else {
+        // per-item error: $r['error']['code'], $r['error']['message_en']
+    }
+}
+```
+
+## Errors
+
+Failures throw `DusimagezException` with `->code`, `->messageEn` and
+`->messageHi` — see [Error codes](/errors/) for all 9 codes.
+
+Full option list: [Options reference](/options/).

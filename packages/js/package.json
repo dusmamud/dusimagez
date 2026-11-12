@@ -1,0 +1,37 @@
+{
+  "author": "dusmamud",
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "description": "Offline image compressor \u2014 reduce image file size with maximum control. One Rust core, wrapped as WASM; no network, no uploads.",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./zod": {
+      "default": "./dist/zod.js",
+      "types": "./dist/zod.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm-pkg"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "dusimagez",
+  "scripts": {
+    "build": "../../crates/dusimagez-wasm/scripts/wasm-build.sh nodejs packages/js/wasm-pkg && tsc -p tsconfig.build.json",
+    "pretest": "[ -f wasm-pkg/dusimagez_wasm.js ] || npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "types": "dist/index.d.ts",
+  "version": "0.1.0"
+}

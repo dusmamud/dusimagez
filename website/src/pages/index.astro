@@ -1,0 +1,120 @@
+---
+const title = 'dusimagez — Offline image compressor';
+const description =
+	'Reduce image file size with maximum control — quality, target size, presets, subsampling, PNG palette. One Rust core, bindings for 7 languages plus a CLI. No upload, no network at runtime.';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content="https://dusimagez.pages.dev/" />
+		<meta property="og:image" content="https://dusimagez.pages.dev/og.svg" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href="https://dusimagez.pages.dev/" />
+		<style>
+			:root { --bg: #0f172a; --card: #1e293b; --ink: #f8fafc; --muted: #94a3b8; --accent: #38bdf8; --green: #22c55e; --line: #334155; }
+			* { box-sizing: border-box; }
+			body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+			a { color: var(--accent); }
+			.wrap { max-width: 960px; margin: 0 auto; padding: 0 20px 64px; }
+			header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+			.logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.25rem; color: var(--ink); text-decoration: none; }
+			.logo img { width: 32px; height: 32px; }
+			nav a { color: var(--muted); text-decoration: none; margin-left: 20px; font-weight: 600; }
+			nav a:hover { color: var(--ink); }
+			.hero { padding: 48px 0 8px; }
+			.hero h1 { font-size: 2.6rem; line-height: 1.15; margin: 0 0 12px; }
+			.hero p { font-size: 1.2rem; color: var(--muted); max-width: 640px; margin: 0 0 24px; }
+			.cta { display: flex; gap: 12px; flex-wrap: wrap; }
+			.btn { display: inline-block; border-radius: 8px; padding: 12px 22px; font-weight: 700; text-decoration: none; }
+			.btn-primary { background: var(--green); color: #052e12; }
+			.btn-ghost { border: 1px solid var(--line); color: var(--ink); }
+			pre { background: #020617; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto; font-size: 0.95rem; }
+			pre code { color: #e2e8f0; }
+			h2 { margin-top: 48px; }
+			.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+			.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+			.card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+			.card p { margin: 0; color: var(--muted); }
+			.limits { background: #451a03; border: 1px solid #92400e; border-radius: 12px; padding: 16px 18px; margin-top: 16px; color: #fde68a; }
+			footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 0.9rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<header>
+				<a class="logo" href="/"><img src="/favicon.svg" alt="" /> dusimagez</a>
+				<nav>
+					<a href="/overview/">Docs</a>
+					<a href="/playground/">Playground</a>
+					<a href="https://github.com/dusmamud/dusimagez">GitHub</a>
+				</nav>
+			</header>
+
+			<section class="hero">
+				<h1>Make images smaller.<br />Keep control.</h1>
+				<p>
+					dusimagez is an offline image compressor: compress to a quality you
+					pick, or to an exact target file size, and get a full before/after
+					report. One Rust core, bindings for Rust, JavaScript, Python, Go,
+					PHP, Kotlin and Swift, plus a CLI. Your images never leave your
+					machine.
+				</p>
+				<div class="cta">
+					<a class="btn btn-primary" href="/playground/">Try the playground</a>
+					<a class="btn btn-ghost" href="/overview/">Read the docs</a>
+				</div>
+			</section>
+
+			<pre><code>dusimagez compress input.jpg output.jpg --quality 80
+dusimagez compress input.jpg output.jpg --target-bytes 200000
+dusimagez info input.jpg</code></pre>
+
+			<h2>Why dusimagez</h2>
+			<div class="grid">
+				<div class="card">
+					<h3>Target size, not just quality</h3>
+					<p>Give it a byte budget. It binary-searches quality (and downscales if it must) until the file fits — or fails honestly with <code>TARGET_SIZE_UNREACHABLE</code>.</p>
+				</div>
+				<div class="card">
+					<h3>A report, not just bytes</h3>
+					<p>Original size, output size, bytes and percent saved, the quality actually used, and whether the image was resized.</p>
+				</div>
+				<div class="card">
+					<h3>Pro controls</h3>
+					<p>Subsampling, progressive JPEG, PNG palette quantise, WebP/AVIF effort, metadata strip/keep, presets, DPI, auto-orient.</p>
+				</div>
+				<div class="card">
+					<h3>One core, every language</h3>
+					<p>The same Rust core backs all 7 bindings and the CLI — and all of them run the same shared test vectors, so results agree.</p>
+				</div>
+				<div class="card">
+					<h3>Offline by design</h3>
+					<p>No upload, no API key, no network at runtime. Batch mode reports per-item errors and never aborts the batch.</p>
+				</div>
+				<div class="card">
+					<h3>Bilingual errors</h3>
+					<p>8 stable error codes, each with an English and a Hindi message, identical in every binding.</p>
+				</div>
+			</div>
+
+			<h2>Honest limits (v0.1.0)</h2>
+			<div class="limits">
+				<strong>No HEIC.</strong> AVIF encode is lossy-only / 8-bit. GIF
+				encode is first-frame only for animated input. Whole image in memory,
+				no streaming. Full details on the <a href="/formats/">Formats</a> page.
+			</div>
+
+			<footer>
+				<span>dusimagez — open source, by dusmamud.</span>
+				<span><a href="/overview/">Docs</a> · <a href="/playground/">Playground</a> · <a href="https://github.com/dusmamud/dusimagez">GitHub</a></span>
+			</footer>
+		</div>
+	</body>
+</html>

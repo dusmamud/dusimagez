@@ -1,0 +1,58 @@
+name: PHP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/dusimagez-ffi/**"
+      - "crates/dusimagez/**"
+      - "packages/php/**"
+      - "shared/**"
+      - ".github/workflows/php.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "crates/dusimagez-ffi/**"
+      - "crates/dusimagez/**"
+      - "packages/php/**"
+      - "shared/**"
+      - ".github/workflows/php.yml"
+
+jobs:
+  php:
+    name: FFI .so + phpunit (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.1", "8.2", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: ffi
+          tools: composer
+      - name: Build FFI shared library
+        run: cargo build --release -p dusimagez-ffi
+      - name: Build CLI (exact vector fixtures)
+        # packages/php looks for target/release/dusimagez to generate
+        # exact mock fixtures; without it the vector tests fall back
+        # to in-test fixtures.
+        run: cargo build --release -p dusimagez-cli
+      - name: Stage .so for PHP FFI
+        run: |
+          mkdir -p packages/php/lib
+          cp target/release/libdusimagez_ffi.so packages/php/lib/
+      - name: Composer install
+        working-directory: packages/php
+        run: composer install --no-progress --prefer-dist
+      - name: PHPUnit (runs for real — the .so was built above, so tests do not skip)
+        working-directory: packages/php
+        env:
+          DUSIMAGEZ_FFI_LIB: ${{ github.workspace }}/packages/php/lib/libdusimagez_ffi.so
+        run: vendor/bin/phpunit

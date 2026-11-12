@@ -1,0 +1,69 @@
+---
+title: Quickstart — Rust
+description: Use dusimagez from Rust — compress_image, compress_to_size, compress_with_report, get_image_info, bulk_compress.
+---
+
+The Rust crate is the core itself — no FFI, no wrapper.
+
+```bash
+cargo add dusimagez
+```
+
+Requires Rust 1.88+.
+
+## Compress
+
+```rust
+use dusimagez::{compress_image, CompressOptions};
+
+let input = std::fs::read("input.jpg")?;
+let output = compress_image(&input, &CompressOptions::default())?;
+std::fs::write("output.jpg", output)?;
+```
+
+## Compress to a target size
+
+```rust
+use dusimagez::{compress_to_size, CompressOptions};
+
+// 200 KB or less, or an honest TARGET_SIZE_UNREACHABLE error.
+let output = compress_to_size(&input, 200_000, &CompressOptions::default())?;
+```
+
+## Report and info
+
+```rust
+use dusimagez::{compress_with_report, get_image_info, CompressOptions, Preset};
+
+let info = get_image_info(&input)?;
+println!("{} {}x{}", info.format, info.width, info.height);
+
+let mut options = CompressOptions::default();
+options.preset = Some(Preset::Web);
+let report = compress_with_report(&input, &options)?;
+println!("{} -> {} bytes, saved {:.1}%, quality {}",
+    report.original_size, report.output_size,
+    report.saved_percent, report.quality_used);
+```
+
+## Batch
+
+```rust
+use dusimagez::{bulk_compress, CompressOptions};
+
+let inputs: Vec<Vec<u8>> = files.iter().map(|f| std::fs::read(f)).collect::<Result<_, _>>()?;
+for result in bulk_compress(&inputs, &CompressOptions::default()) {
+    match result {
+        Ok(report) => println!("saved {} bytes", report.saved_bytes),
+        Err(e) => eprintln!("{}: {}", e.code, e.message_en), // per-item error
+    }
+}
+```
+
+## Errors
+
+Every fallible call returns `Result<_, DusimagezError>`, with `code`
+(`EMPTY_INPUT`, `INVALID_IMAGE`, … — see [Error codes](/errors/)),
+`message_en` and `message_hi`.
+
+Full option list: [Options reference](/options/).

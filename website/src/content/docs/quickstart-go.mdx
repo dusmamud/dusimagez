@@ -1,0 +1,71 @@
+---
+title: Quickstart — Go
+description: Use dusimagez from Go — cgo wrapper over the C FFI crate, Go-idiomatic API.
+---
+
+```bash
+go get github.com/dusmamud/dusimagez/go
+```
+
+Requires Go 1.22+ and a C compiler (cgo). The Go package wraps the
+compiled Rust core through the C FFI crate — no business logic is
+re-implemented in Go.
+
+## Compress
+
+```go
+package main
+
+import (
+	"os"
+
+	"github.com/dusmamud/dusimagez/go/dusimagez"
+)
+
+func main() {
+	input, _ := os.ReadFile("input.jpg")
+	output, err := dusimagez.Compress(input, dusimagez.Options{Quality: 80})
+	if err != nil {
+		panic(err)
+	}
+	os.WriteFile("output.jpg", output, 0o644)
+}
+```
+
+## Compress to a target size
+
+```go
+// 200 KB or less, or an error with code TARGET_SIZE_UNREACHABLE.
+output, err := dusimagez.CompressToSize(input, 200_000, dusimagez.Options{})
+```
+
+## Report and info
+
+```go
+info, err := dusimagez.GetInfo(input)
+// info.Format, info.Width, info.Height
+
+report, err := dusimagez.CompressWithReport(input, dusimagez.Options{Preset: dusimagez.PresetWeb})
+// report.OriginalSize, report.OutputSize, report.SavedPercent,
+// report.QualityUsed, report.Resized
+```
+
+## Batch
+
+```go
+results := dusimagez.BulkCompress(inputs, dusimagez.Options{})
+for _, r := range results {
+	if r.Err != nil {
+		// per-item error: r.Err.Code, r.Err.MessageEn, r.Err.MessageHi
+		continue
+	}
+	// r.Report.SavedBytes
+}
+```
+
+## Errors
+
+Failures return a `*dusimagez.Error` with `Code`, `MessageEn` and
+`MessageHi` — see [Error codes](/errors/) for all 9 codes.
+
+Full option list: [Options reference](/options/).

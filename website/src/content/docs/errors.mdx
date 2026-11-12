@@ -1,0 +1,57 @@
+---
+title: Error codes
+description: All dusimagez error codes — stable across every language binding, with English and Hindi messages.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+dusimagez has **9 stable error codes**. They are identical in every
+binding — Rust, JavaScript, Python, Go, PHP, Kotlin and Swift — and every
+error carries the same English message and the same Hindi message. Code
+against the code, not the message text.
+
+<Aside type="note" title="Codes are the contract, messages carry detail">
+The **codes** below are the v0.1.0 contract (defined in
+[shared/spec.md](https://github.com/dusmamud/dusimagez/blob/main/shared/spec.md)).
+Messages follow the core's templates and include the failing detail, so
+exact message text varies run to run — code against the code, not the
+message text.
+</Aside>
+
+## Codes
+
+| Code | English (template) | Hindi (template) | When it happens |
+|---|---|---|---|
+| `EMPTY_INPUT` | `No input: {what} is empty.` | `कोई इनपुट नहीं है: {what} खाली है।` | The input is 0 bytes. Checked before anything else — an empty input is `EMPTY_INPUT`, never `INVALID_IMAGE`. |
+| `INVALID_IMAGE` | `The input is not a valid image: {detail}.` | `इनपुट एक मान्य इमेज नहीं है: {detail}।` | The bytes are not an image at all (for example, plain text). |
+| `UNSUPPORTED_FORMAT` | `Format '{format}' is not supported in v0.1.0. Supported inputs: JPEG, PNG, WebP, GIF, BMP, TIFF. AVIF input needs a dav1d decoder, which is not bundled.` | `'{format}' फ़ॉर्मैट v0.1.0 में समर्थित नहीं है। समर्थित इनपुट: JPEG, PNG, WebP, GIF, BMP, TIFF। AVIF इनपुट के लिए dav1d डिकोडर चाहिए, जो शामिल नहीं है।` | The image is valid but its format is not supported here — for example, an AVIF input in v0.1.0 (no dav1d decoder bundled) or HEIC. |
+| `IMAGE_TOO_LARGE` | `Image is {width}x{height}, which exceeds the limits (max {max_pixels} pixels, max {max_dimension}px per side).` | `इमेज {width}x{height} है, जो सीमा से बड़ी है (अधिकतम {max_pixels} पिक्सेल, प्रति तरफ़ अधिकतम {max_dimension}px)।` | The image exceeds `max_pixels` (default 120,000,000) or `max_dimension` (default 16000). |
+| `TARGET_SIZE_UNREACHABLE` | `Cannot reach {target_bytes} bytes: even the lowest quality at 10% of the original dimensions is larger.` | `{target_bytes} बाइट तक नहीं पहुँचा जा सकता: सबसे कम क्वालिटी पर मूल आकार के 10% पर भी फ़ाइल बड़ी है।` | `compress_to_size` / `target_bytes` could not fit the budget even at minimum quality and 10% dimensions. |
+| `INVALID_QUALITY` | `Quality must be 1-100, got {quality}.` | `क्वालिटी 1-100 के बीच होनी चाहिए, मिली {quality}।` | `quality` is outside 1–100 (for example, 0 or 101). |
+| `INVALID_DIMENSIONS` | `Invalid dimensions: {detail}.` | `अमान्य आयाम: {detail}।` | A dimension option is zero, negative, or beyond the allowed maximum. |
+| `INVALID_ARGUMENT` | `Invalid argument: {detail}.` | `अमान्य आर्ग्युमेंट: {detail}।` | Any other invalid option value. |
+| `INVALID_TYPE` | Binding-specific message. | बाइंडिंग के अनुसार संदेश। | Binding-layer only: the input is not bytes, or an option has the wrong type — raised before the core is called. The core itself never returns this code. |
+
+## How errors surface
+
+**Rust** — `Result<_, DusimagezError>`; the error carries `code`,
+`message_en` and `message_hi`.
+
+```rust
+match dusimagez::compress_image(&bytes, &options) {
+    Ok(out) => { /* ... */ }
+    Err(e) => eprintln!("{}: {}", e.code(), e.message_en()),
+}
+```
+
+**JavaScript / TypeScript** — thrown as a JSON string:
+`{"ok":false,"code":"...","message_en":"...","message_hi":"..."}`.
+
+**Python / Go / PHP / Kotlin / Swift** — each binding's native error type,
+carrying the same three fields (`code`, `message_en`, `message_hi`).
+
+## Bulk errors
+
+`bulk_compress` never throws for the whole batch. Each item's result is
+either a `CompressReport` or one of the codes above — a single bad file
+reports its own error while the rest of the batch still succeeds.

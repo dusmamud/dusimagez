@@ -1,0 +1,269 @@
+// dusimagez — UniFFI interface definition (v0.1.0 contract).
+//
+// This .udl is the shared contract for the Kotlin (Android) and Swift
+// (iOS/macOS) bindings: both generated wrappers are built from this
+// file, so it must stay in lockstep with `crates/dusimagez` (SPEC.md
+// §1-4: the core functions, the `CompressOptions` struct, the
+// `CompressReport` / `ImageInfo` records, and the error codes).
+// Field names match the Rust structs field-for-field, except where
+// UniFFI cannot express a Rust type — those divergences are marked
+// DIVERGENCE below, and the Rust side converts between the two shapes.
+//
+// WIRING (for W1 / the core owner — this file alone does nothing):
+// the core crate (or a thin `dusimagez-uniffi` crate, as in
+// dusrelimage) must call `uniffi::include_scaffolding!("dusimagez")`
+// and define Rust types with exactly these names/fields, converting
+// to/from the core types. The UDL is the source of truth for the
+// cross-language API; the Rust side adapts to it, not the other way.
+// One wiring gotcha, verified while generating these bindings: the
+// generated Kotlin loads the native library as `uniffi_dusimagez`
+// (JNA `Native.load("uniffi_dusimagez")`), so the cdylib that ships
+// the scaffolding MUST be named `uniffi_dusimagez` (crate `[lib]
+// name = "uniffi_dusimagez"`), or consumers must set the
+// `uniffi.component.dusimagez.libraryOverride` system property.
+// The Swift side links the same symbols from `libdusimagez.a` /
+// `libuniffi_dusimagez.a` via the `DusimagezFFI` modulemap.
+//
+// SYNTAX — READ BEFORE EDITING (uniffi 0.29, weedle-based UDL parser):
+// this file was verified to parse + generate with uniffi-bindgen
+// 0.29.5. Two shapes that LOOK right do NOT parse in 0.29 and must
+// never be reintroduced:
+// * Trailing `throws X` on a function does NOT parse. Throwing
+//   functions use the `[Throws=X]` attribute above the function.
+// * Error variants with inline fields do NOT parse in `enum` syntax
+//   (`"Variant" { string code; ... }` is invalid weedle). Rich
+//   errors use the `[Error] interface` syntax below, where each
+//   variant is a method whose parameters are the variant's fields.
+//   (The dusrelimage UDL uses both of the invalid shapes — it was
+//   never run through bindgen 0.29. Do not copy them from there.)
+// Plain `enum` variants are always field-less strings; an enum with
+// variants that carry data needs the `[Enum] interface` syntax
+// instead (not needed here — all four enums below are field-less).
+//
+// UDL design notes for the Kotlin / Swift wrappers:
+// * Bytes are `sequence<u8>` everywhere (never base64 / JSON strings).
+// * Options are typed dictionaries, not JSON strings — UniFFI is
+//   typed, so `CompressOptions` maps field-for-field to the Rust struct.
+// * UDL dictionary fields CAN carry defaults for primitives, enums,
+//   strings and `Option` (`= null`); they CANNOT carry a default that
+//   is itself a dictionary. `CompressOptions` has no nested-dictionary
+//   field except `dpi`, which is `Option<Dpi>` and defaults to `null`,
+//   so every field below carries its SPEC §2 default directly.
+// * Generated names: UDL snake_case becomes Kotlin/Swift camelCase
+//   (`message_en` -> `messageEn`, `has_alpha` -> `hasAlpha` /
+//   `hasAlpha`). Kotlin names the error type `DusimagezException`
+//   (sealed class, one subclass per variant); Swift keeps
+//   `DusimagezError` (enum with associated values). Enum variant
+//   names are preserved as written (`Jpeg`, `S420`, `Web`, `All`).
+// * DIVERGENCE — `CompressOptions.dpi` is a Rust `Option<(u32, u32)>`;
+//   UDL has no tuples, so it is `Dpi?` (`{ width, height }`).
+//   Kotlin/Swift pass `Dpi(width, height)` or `null`; the Rust side
+//   converts `Dpi` <-> `(u32, u32)`.
+// * DIVERGENCE — `CompressOptions.subsampling` has a CONDITIONAL Rust
+//   default (SPEC §2: `S420` for JPEG quality < 90, `S444` otherwise),
+//   which cannot be written as a UDL literal default. It is therefore
+//   `Subsampling?` defaulting to `null`, where `null` means "let the
+//   core apply the quality-dependent rule". An explicit `S444` /
+//   `S422` / `S420` always wins. Wrappers MUST NOT substitute their
+//   own default (e.g. `S420`) — that would silently change behaviour
+//   for quality >= 90.
+// * DIVERGENCE — `ImageInfo.format` is a `string`, not `ImageFormat`:
+//   TIFF is an input-only format (SPEC §3: it decodes, but is never
+//   an output format), so it has no `ImageFormat` variant. The string
+//   is the lowercase short name (`"jpeg"`, `"png"`, `"webp"`,
+//   `"avif"`, `"gif"`, `"bmp"`, `"tiff"`). `CompressReport.format`
+//   IS `ImageFormat`, because a report always describes an output.
+//   `ImageInfo.colour_type` is likewise a string: the lowercase
+//   `image`-crate colour type (`"rgb8"`, `"rgba8"`, ...).
+// * DIVERGENCE — `bulk_compress` does NOT throw: the core returns one
+//   `Result` per input and a failing item never aborts the batch
+//   (SPEC §1). UniFFI cannot return `sequence<Result<...>>`, so the
+//   per-item outcome is carried in `BulkItemResult` as `ok` plus
+//   either `report` or the flat `error_code` / `error_message_en` /
+//   `error_message_hi` (the error interface cannot be a dictionary
+//   field, so the code + messages are inlined here, exactly as in
+//   dusrelimage's `BulkItemResult`). An empty input list returns an
+//   empty list (core semantics).
+// * Every error variant carries `code` + `message_en` +
+//   `message_hi`: `code` is always the stable code string (e.g.
+//   `"INVALID_IMAGE"`) and equals the variant name in SNAKE_UPPER
+//   form, so wrappers can also derive it from the variant.
+// * This UDL defines ONLY the five SPEC §1 functions. There is no
+//   `make_test_image` / `version` extra (unlike dusrelimage): the
+//   Kotlin/Swift tests build their fixtures in-language with a tiny
+//   PNG encoder instead, so no extra core surface is needed.
+
+namespace dusimagez {
+    [Throws=DusimagezError]
+    sequence<u8> compress_image(sequence<u8> input, CompressOptions options);
+    [Throws=DusimagezError]
+    sequence<u8> compress_to_size(sequence<u8> input, u64 target_bytes, CompressOptions options);
+    [Throws=DusimagezError]
+    CompressReport compress_with_report(sequence<u8> input, CompressOptions options);
+    [Throws=DusimagezError]
+    ImageInfo get_image_info(sequence<u8> input);
+    sequence<BulkItemResult> bulk_compress(sequence<sequence<u8>> inputs, CompressOptions options);
+};
+
+// ---------------------------------------------------------------------------
+// Errors — all 8 stable codes (SPEC section 4). `[Error] interface`
+// syntax: each variant is a method whose parameters are the variant's
+// fields (see SYNTAX note above). Every variant carries the code
+// string plus the English + Hindi messages from the core.
+// ---------------------------------------------------------------------------
+
+[Error]
+interface DusimagezError {
+    InvalidImage(string code, string message_en, string message_hi);
+    UnsupportedFormat(string code, string message_en, string message_hi);
+    ImageTooLarge(string code, string message_en, string message_hi);
+    TargetSizeUnreachable(string code, string message_en, string message_hi);
+    InvalidQuality(string code, string message_en, string message_hi);
+    InvalidDimensions(string code, string message_en, string message_hi);
+    InvalidArgument(string code, string message_en, string message_hi);
+    EmptyInput(string code, string message_en, string message_hi);
+};
+
+// ---------------------------------------------------------------------------
+// Value types
+// ---------------------------------------------------------------------------
+
+/// Output image format (SPEC §3). TIFF is deliberately absent: it is
+/// an input-only format (it decodes, but is never an output format).
+enum ImageFormat {
+    "Jpeg",
+    "Png",
+    "WebP",
+    "Avif",
+    "Gif",
+    "Bmp",
+};
+
+/// Chroma subsampling for JPEG (and any format that honours it).
+enum Subsampling {
+    "S444",
+    "S422",
+    "S420",
+};
+
+/// Preset: sets quality / effort / subsampling defaults; explicit
+/// fields in `CompressOptions` override the preset (SPEC §2).
+enum Preset {
+    "Web",
+    "Social",
+    "Print",
+    "Archive",
+};
+
+/// What metadata survives on output (SPEC §2).
+enum StripMetadata {
+    "All",
+    "KeepExif",
+    "KeepIcc",
+    "KeepAll",
+};
+
+/// DPI pair (used for `CompressOptions.dpi`; see DIVERGENCE note).
+dictionary Dpi {
+    u32 width;
+    u32 height;
+};
+
+/// Full before/after report for one compression (SPEC §1).
+/// `format` is the OUTPUT format. `saved_percent` is
+/// `100 * saved_bytes / original_size` (0 when `original_size` is 0).
+/// `quality_used` is the quality the output was actually encoded at
+/// (differs from the requested quality after a `compress_to_size`
+/// search or a downscale fallback). `resized` is true when the output
+/// dimensions differ from the input dimensions.
+dictionary CompressReport {
+    sequence<u8> output;
+    u64 original_size;
+    u64 output_size;
+    u64 saved_bytes;
+    f32 saved_percent;
+    ImageFormat format;
+    u32 width;
+    u32 height;
+    u8 quality_used;
+    boolean resized;
+};
+
+/// Summary of an image, from `get_image_info` (SPEC §1).
+/// `format` is a lowercase short name (`"jpeg"`, `"png"`, `"webp"`,
+/// `"avif"`, `"gif"`, `"bmp"`, `"tiff"` — see DIVERGENCE note).
+/// `colour_type` is the lowercase `image`-crate colour type
+/// (`"rgb8"`, `"rgba8"`, ...). `file_size` is the input byte length.
+dictionary ImageInfo {
+    string format;
+    u32 width;
+    u32 height;
+    boolean has_alpha;
+    string colour_type;
+    u64 file_size;
+};
+
+/// One item of a `bulk_compress` result: the input's `index` and its
+/// outcome. On success `ok` is true and `report` holds the result;
+/// on failure `ok` is false, `report` is `null`, and the error is
+/// carried flat in `error_code` / `error_message_en` /
+/// `error_message_hi` (see DIVERGENCE note).
+dictionary BulkItemResult {
+    u32 index;
+    boolean ok;
+    CompressReport? report = null;
+    string? error_code = null;
+    string? error_message_en = null;
+    string? error_message_hi = null;
+};
+
+// ---------------------------------------------------------------------------
+// Options — pro control layer (SPEC §2). Every field carries its
+// SPEC default below, except `subsampling` (see DIVERGENCE note).
+// ---------------------------------------------------------------------------
+
+/// Pro compressor options (SPEC §2).
+dictionary CompressOptions {
+    /// Quality 1-100 (default 80). JPEG/WebP use it directly; PNG
+    /// uses `png_compression_level` + `palette` instead.
+    u8 quality = 80;
+    /// Output format; `null` keeps the input format (TIFF input falls
+    /// back to PNG).
+    ImageFormat? format = null;
+    /// Progressive JPEG / interlaced PNG (default false).
+    boolean progressive = false;
+    /// Lossless output (WebP/PNG only; default false).
+    boolean lossless = false;
+    /// Encoding effort: WebP 0-6, AVIF speed 0-10 (default 6).
+    u8 effort = 6;
+    /// Chroma subsampling. `null` (default) = let the core apply the
+    /// quality-dependent rule: S420 for JPEG quality < 90, S444
+    /// otherwise (see DIVERGENCE note).
+    Subsampling? subsampling = null;
+    /// PNG compression level 0-9 (default 6).
+    u8 png_compression_level = 6;
+    /// PNG quantise to palette (default false).
+    boolean palette = false;
+    /// Preset; explicit fields override it (default unset).
+    Preset? preset = null;
+    /// Target output size in bytes; same as `compress_to_size` via
+    /// one call (default unset).
+    u64? target_bytes = null;
+    /// Downscale-only max width in px, aspect preserved, never
+    /// upscale (default unset).
+    u32? max_width = null;
+    /// Downscale-only max height in px, aspect preserved, never
+    /// upscale (default unset).
+    u32? max_height = null;
+    /// What metadata survives on output (default `All` = strip all).
+    StripMetadata strip_metadata = "All";
+    /// Apply EXIF orientation on load (default true).
+    boolean auto_orient = true;
+    /// DPI to write on JPEG/PNG output where supported
+    /// (default unset).
+    Dpi? dpi = null;
+    /// Refuse images with more pixels than this (default 120,000,000).
+    u64 max_pixels = 120000000;
+    /// Refuse images with a side longer than this (default 16000).
+    u32 max_dimension = 16000;
+};

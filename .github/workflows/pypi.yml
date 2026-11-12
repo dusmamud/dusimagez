@@ -1,0 +1,40 @@
+name: Publish to PyPI
+
+# Trusted Publishing (OIDC) — manual dispatch only.
+# One-time dashboard setup required first: pypi.org → project
+# dusimagez → Settings → Publishing → pending trusted publisher
+# (GitHub Actions, repo dusmamud/dusimagez, workflow pypi.yml).
+# No PyPI token is stored in repo secrets.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    name: Publish packages/python to PyPI
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel + sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --manifest-path crates/dusimagez-py/Cargo.toml --out dist
+      - name: Build Python sdist (wrapper package)
+        working-directory: packages/python
+        run: |
+          pip install build
+          python -m build --sdist --outdir ../../dist
+      - name: Publish to PyPI (OIDC)
+        uses: pypa/gh-action-pypi-publish@v1
+        with:
+          packages-dir: dist

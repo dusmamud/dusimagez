@@ -1,0 +1,33 @@
+[package]
+name = "dusimagez-ffi"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/dusmamud/dusimagez"
+homepage = "https://github.com/dusmamud/dusimagez"
+authors = ["dusmamud"]
+description = "C ABI bindings for dusimagez — thin wrappers over the Rust core (the Go/PHP FFI foundation)"
+publish = false
+
+[lib]
+# The cdylib is `libdusimagez_ffi.so` / `dusimagez_ffi.dll` /
+# `libdusimagez_ffi.dylib`, which Go (cgo) and PHP (FFI) link against.
+# The staticlib is the same API for static linking. `rlib` is included
+# as well — same precedent as dusrelimage-ffi — because without it cargo
+# cannot link the integration tests in `tests/` at all on a bare
+# `cargo test` run: cargo only builds cdylib/staticlib on `cargo build`,
+# never for tests. The rlib changes nothing about the C API or the
+# cdylib/staticlib artifacts; it only lets the tests resolve the symbols.
+# The lib is named `dusimagez_ffi` (not `dusimagez`) so it does not
+# collide with the core crate of the same name when a test binary links
+# both.
+name = "dusimagez_ffi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+dusimagez = { path = "../dusimagez" }
+serde_json = "1"
+
+[dev-dependencies]
+serde_json = "1"
