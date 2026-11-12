@@ -70,7 +70,7 @@ final class DusimagezTests: XCTestCase {
 
     func testCompressPngKeepsDimensionsAndReportMaths() throws {
         let input = TestPng.gradient(width: 64, height: 48)
-        let report = try Dusimagez.compressWithReport(input)
+        let report = try DusimagezAPI.compressWithReport(input)
         XCTAssertEqual(report.originalSize, UInt64(input.count))
         XCTAssertEqual(report.outputSize, UInt64(report.output.count))
         // savedBytes is saturating: 0 when the output is larger than
@@ -90,7 +90,7 @@ final class DusimagezTests: XCTestCase {
             : 0.0
         XCTAssertEqual(report.savedPercent, expected, accuracy: 0.01)
         // The report output decodes to the same dimensions.
-        let info = try Dusimagez.getImageInfo(Data(report.output))
+        let info = try DusimagezAPI.getImageInfo(Data(report.output))
         XCTAssertEqual(info.format, "png")
         XCTAssertEqual(info.width, 64)
         XCTAssertEqual(info.height, 48)
@@ -98,11 +98,11 @@ final class DusimagezTests: XCTestCase {
 
     func testCompressToJpeg() throws {
         let input = TestPng.gradient(width: 100, height: 80)
-        let out = try Dusimagez.compressImage(
+        let out = try DusimagezAPI.compressImage(
             input,
             options: CompressOptions(quality: 70, format: .jpeg)
         )
-        let info = try Dusimagez.getImageInfo(out)
+        let info = try DusimagezAPI.getImageInfo(out)
         XCTAssertEqual(info.format, "jpeg")
         XCTAssertEqual(info.width, 100)
         XCTAssertEqual(info.height, 80)
@@ -112,14 +112,14 @@ final class DusimagezTests: XCTestCase {
 
     func testCompressToSizeReachesTargetAndUnreachable() throws {
         let input = TestPng.noise(width: 400, height: 300, seed: 7)
-        let opts = CompressOptions(format: .jpeg, quality: 90)
-        let out = try Dusimagez.compressToSize(input, targetBytes: 200_000, options: opts)
+        let opts = CompressOptions(quality: 90, format: .jpeg)
+        let out = try DusimagezAPI.compressToSize(input, targetBytes: 200_000, options: opts)
         XCTAssertLessThanOrEqual(out.count, 200_000)
-        let info = try Dusimagez.getImageInfo(out)
+        let info = try DusimagezAPI.getImageInfo(out)
         XCTAssertEqual(info.width, 400)
         XCTAssertEqual(info.height, 300)
         XCTAssertThrowsError(
-            try Dusimagez.compressToSize(input, targetBytes: 100, options: opts)
+            try DusimagezAPI.compressToSize(input, targetBytes: 100, options: opts)
         ) { error in
             guard let e = error as? DusimagezError else {
                 return XCTFail("wrong error type: \(error)")
@@ -131,7 +131,7 @@ final class DusimagezTests: XCTestCase {
     }
 
     func testEmptyInputIsEmptyInputError() {
-        XCTAssertThrowsError(try Dusimagez.compressImage(Data())) { error in
+        XCTAssertThrowsError(try DusimagezAPI.compressImage(Data())) { error in
             guard let e = error as? DusimagezError else {
                 return XCTFail("wrong error type: \(error)")
             }
@@ -143,7 +143,7 @@ final class DusimagezTests: XCTestCase {
 
     func testGarbageInputIsInvalidImageError() {
         XCTAssertThrowsError(
-            try Dusimagez.compressImage(Data("this is not an image".utf8))
+            try DusimagezAPI.compressImage(Data("this is not an image".utf8))
         ) { error in
             guard let e = error as? DusimagezError else {
                 return XCTFail("wrong error type: \(error)")
@@ -154,7 +154,7 @@ final class DusimagezTests: XCTestCase {
 
     func testInvalidQualityIsInvalidQualityError() {
         XCTAssertThrowsError(
-            try Dusimagez.compressImage(
+            try DusimagezAPI.compressImage(
                 TestPng.solid(width: 32, height: 32, r: 1, g: 2, b: 3),
                 options: CompressOptions(quality: 0)
             )
@@ -168,7 +168,7 @@ final class DusimagezTests: XCTestCase {
 
     func testMaxWidthDownscalesOnlyAndMarksResized() throws {
         let input = TestPng.gradient(width: 200, height: 100)
-        let report = try Dusimagez.compressWithReport(
+        let report = try DusimagezAPI.compressWithReport(
             input,
             options: CompressOptions(maxWidth: 100)
         )
@@ -176,7 +176,7 @@ final class DusimagezTests: XCTestCase {
         XCTAssertEqual(report.height, 50)
         XCTAssertTrue(report.resized)
         // Never upscale: maxWidth larger than the input is a no-op.
-        let noUpscale = try Dusimagez.compressWithReport(
+        let noUpscale = try DusimagezAPI.compressWithReport(
             input,
             options: CompressOptions(maxWidth: 400)
         )
@@ -186,7 +186,7 @@ final class DusimagezTests: XCTestCase {
 
     func testBulkCompressPartialFailureNeverAbortsBatch() {
         let good = TestPng.gradient(width: 64, height: 48)
-        let results = Dusimagez.bulkCompress([good, Data()])
+        let results = DusimagezAPI.bulkCompress([good, Data()])
         XCTAssertEqual(results.count, 2)
         XCTAssertEqual(results[0].index, 0)
         XCTAssertTrue(results[0].ok)
@@ -198,12 +198,12 @@ final class DusimagezTests: XCTestCase {
         XCTAssertFalse(results[1].errorMessageEn?.isEmpty ?? true)
         XCTAssertFalse(results[1].errorMessageHi?.isEmpty ?? true)
         // Empty batch -> empty result (core semantics).
-        XCTAssertTrue(Dusimagez.bulkCompress([]).isEmpty)
+        XCTAssertTrue(DusimagezAPI.bulkCompress([]).isEmpty)
     }
 
     func testGetImageInfoOnSolidPng() throws {
         let input = TestPng.solid(width: 1, height: 1, r: 255, g: 0, b: 0)
-        let info = try Dusimagez.getImageInfo(input)
+        let info = try DusimagezAPI.getImageInfo(input)
         XCTAssertEqual(info.format, "png")
         XCTAssertEqual(info.width, 1)
         XCTAssertEqual(info.height, 1)

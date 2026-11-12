@@ -9,7 +9,7 @@ import (
 )
 
 // Embedded fixtures (no binary blobs committed): a 1x1 greyscale+alpha
-// PNG (68 bytes, colour type "La8") and garbage bytes.
+// PNG (68 bytes, colour type "la8" — core lowercases it) and garbage bytes.
 const png1x1Base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAbitOmMAAAAASUVORK5CYII="
 
 func png1x1(t *testing.T) []byte {
@@ -203,7 +203,7 @@ func TestGetInfoPNG(t *testing.T) {
 		t.Fatal(err)
 	}
 	if info.Format != FormatPNG || info.Width != 1 || info.Height != 1 ||
-		!info.HasAlpha || info.ColourType != "La8" || info.FileSize != uint64(len(png1x1(t))) {
+		!info.HasAlpha || info.ColourType != "la8" || info.FileSize != uint64(len(png1x1(t))) {
 		t.Fatalf("GetInfo = %+v", info)
 	}
 }

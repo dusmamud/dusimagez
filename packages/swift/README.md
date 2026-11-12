@@ -14,7 +14,7 @@ packages/swift/
   Package.swift                  # Dusimagez + DusimagezFFI targets
   Sources/Dusimagez/
     dusimagez.swift              # GENERATED — do not hand-edit
-    Dusimagez.swift              # idiomatic Data-based wrapper
+    DusimagezAPI.swift           # idiomatic Data-based wrapper
   Sources/DusimagezFFI/
     dusimagezFFI.h               # GENERATED C header (uniffi-bindgen)
     module.modulemap             # GENERATED modulemap
@@ -37,29 +37,29 @@ import Dusimagez
 let input = try Data(contentsOf: URL(fileURLWithPath: "input.jpg"))
 
 // Default options (quality 80, keep input format).
-let out = try Dusimagez.compressImage(input)
+let out = try DusimagezAPI.compressImage(input)
 
 // To JPEG at quality 70, max 1600 px wide (downscale-only).
-let jpeg = try Dusimagez.compressImage(
+let jpeg = try DusimagezAPI.compressImage(
     input,
     options: CompressOptions(quality: 70, format: .jpeg, maxWidth: 1600)
 )
 
 // Full report: sizes, savings, actual quality, whether it resized.
-let report = try Dusimagez.compressWithReport(input)
+let report = try DusimagezAPI.compressWithReport(input)
 print("saved \(report.savedBytes) bytes (\(report.savedPercent)%)")
 
 // Target size — throws DusimagezError.targetSizeUnreachable when
 // even the lowest quality + downscale cannot reach it.
-let small = try Dusimagez.compressToSize(input, targetBytes: 200_000)
+let small = try DusimagezAPI.compressToSize(input, targetBytes: 200_000)
 
 // Info without decoding the whole image into pixels.
-let info = try Dusimagez.getImageInfo(input)
+let info = try DusimagezAPI.getImageInfo(input)
 print("\(info.format) \(info.width)x\(info.height)")
 
 // Batch: one result per input, same order; a bad item fails only
 // its own entry (ok == false + errorCode), never the whole batch.
-let results = Dusimagez.bulkCompress([input, Data()])
+let results = DusimagezAPI.bulkCompress([input, Data()])
 ```
 
 Errors are `DusimagezError` (generated — Swift keeps the UDL name,
@@ -115,7 +115,7 @@ dependency pins):
 cargo install uniffi-bindgen --version 0.29
 ```
 
-After regenerating, check that the wrapper (`Dusimagez.swift`) and
+After regenerating, check that the wrapper (`DusimagezAPI.swift`) and
 the tests still compile — a UDL change (new field, renamed variant)
 shows up here first.
 

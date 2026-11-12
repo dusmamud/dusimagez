@@ -22,6 +22,18 @@ import uniffi.dusimagez.CompressOptions as GeneratedCompressOptions
 import uniffi.dusimagez.CompressReport as GeneratedCompressReport
 import uniffi.dusimagez.Dpi as GeneratedDpi
 import uniffi.dusimagez.DusimagezException as GeneratedDusimagezException
+// Nested error subclasses, imported directly: Kotlin cannot access a
+// nested class through a typealias (`DusimagezException.InvalidImage`
+// is an "unresolved reference"), so the `when` branches below match
+// on these imports instead.
+import uniffi.dusimagez.DusimagezException.EmptyInput
+import uniffi.dusimagez.DusimagezException.ImageTooLarge
+import uniffi.dusimagez.DusimagezException.InvalidArgument
+import uniffi.dusimagez.DusimagezException.InvalidDimensions
+import uniffi.dusimagez.DusimagezException.InvalidImage
+import uniffi.dusimagez.DusimagezException.InvalidQuality
+import uniffi.dusimagez.DusimagezException.TargetSizeUnreachable
+import uniffi.dusimagez.DusimagezException.UnsupportedFormat
 import uniffi.dusimagez.ImageFormat as GeneratedImageFormat
 import uniffi.dusimagez.ImageInfo as GeneratedImageInfo
 import uniffi.dusimagez.Preset as GeneratedPreset
@@ -71,40 +83,40 @@ typealias DusimagezException = GeneratedDusimagezException
 /** Stable error code, e.g. `"INVALID_IMAGE"` (== variant name in SNAKE_UPPER). */
 val DusimagezException.code: String
     get() = when (this) {
-        is DusimagezException.InvalidImage -> code
-        is DusimagezException.UnsupportedFormat -> code
-        is DusimagezException.ImageTooLarge -> code
-        is DusimagezException.TargetSizeUnreachable -> code
-        is DusimagezException.InvalidQuality -> code
-        is DusimagezException.InvalidDimensions -> code
-        is DusimagezException.InvalidArgument -> code
-        is DusimagezException.EmptyInput -> code
+        is InvalidImage -> code
+        is UnsupportedFormat -> code
+        is ImageTooLarge -> code
+        is TargetSizeUnreachable -> code
+        is InvalidQuality -> code
+        is InvalidDimensions -> code
+        is InvalidArgument -> code
+        is EmptyInput -> code
     }
 
 /** English error message from the core. */
 val DusimagezException.messageEn: String
     get() = when (this) {
-        is DusimagezException.InvalidImage -> messageEn
-        is DusimagezException.UnsupportedFormat -> messageEn
-        is DusimagezException.ImageTooLarge -> messageEn
-        is DusimagezException.TargetSizeUnreachable -> messageEn
-        is DusimagezException.InvalidQuality -> messageEn
-        is DusimagezException.InvalidDimensions -> messageEn
-        is DusimagezException.InvalidArgument -> messageEn
-        is DusimagezException.EmptyInput -> messageEn
+        is InvalidImage -> messageEn
+        is UnsupportedFormat -> messageEn
+        is ImageTooLarge -> messageEn
+        is TargetSizeUnreachable -> messageEn
+        is InvalidQuality -> messageEn
+        is InvalidDimensions -> messageEn
+        is InvalidArgument -> messageEn
+        is EmptyInput -> messageEn
     }
 
 /** Hindi error message from the core. */
 val DusimagezException.messageHi: String
     get() = when (this) {
-        is DusimagezException.InvalidImage -> messageHi
-        is DusimagezException.UnsupportedFormat -> messageHi
-        is DusimagezException.ImageTooLarge -> messageHi
-        is DusimagezException.TargetSizeUnreachable -> messageHi
-        is DusimagezException.InvalidQuality -> messageHi
-        is DusimagezException.InvalidDimensions -> messageHi
-        is DusimagezException.InvalidArgument -> messageHi
-        is DusimagezException.EmptyInput -> messageHi
+        is InvalidImage -> messageHi
+        is UnsupportedFormat -> messageHi
+        is ImageTooLarge -> messageHi
+        is TargetSizeUnreachable -> messageHi
+        is InvalidQuality -> messageHi
+        is InvalidDimensions -> messageHi
+        is InvalidArgument -> messageHi
+        is EmptyInput -> messageHi
     }
 
 internal fun ByteArray.toUByteList(): List<UByte> = map { it.toUByte() }

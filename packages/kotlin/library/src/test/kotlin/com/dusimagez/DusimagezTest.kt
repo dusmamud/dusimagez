@@ -7,6 +7,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+// Nested error subclasses, imported directly: Kotlin cannot access a
+// nested class through a typealias (`DusimagezException.InvalidImage`
+// is an "unresolved reference") — same rule as in Dusimagez.kt.
+import uniffi.dusimagez.DusimagezException.EmptyInput
+import uniffi.dusimagez.DusimagezException.InvalidImage
+import uniffi.dusimagez.DusimagezException.InvalidQuality
+import uniffi.dusimagez.DusimagezException.TargetSizeUnreachable
 
 /**
  * JUnit tests for the Kotlin bindings. Two groups:
@@ -140,7 +147,7 @@ class DusimagezTest {
         try {
             Dusimagez.compressToSize(input, 100uL, opts)
             fail("expected TARGET_SIZE_UNREACHABLE")
-        } catch (e: DusimagezException.TargetSizeUnreachable) {
+        } catch (e: TargetSizeUnreachable) {
             assertEquals("TARGET_SIZE_UNREACHABLE", e.code)
             assertTrue(e.messageEn.isNotEmpty())
             assertTrue(e.messageHi.isNotEmpty())
@@ -153,7 +160,7 @@ class DusimagezTest {
         try {
             Dusimagez.compressImage(byteArrayOf())
             fail("expected EMPTY_INPUT")
-        } catch (e: DusimagezException.EmptyInput) {
+        } catch (e: EmptyInput) {
             assertEquals("EMPTY_INPUT", e.code)
             assertTrue(e.messageEn.isNotEmpty())
             assertTrue(e.messageHi.isNotEmpty())
@@ -166,7 +173,7 @@ class DusimagezTest {
         try {
             Dusimagez.compressImage("this is not an image".toByteArray(Charsets.UTF_8))
             fail("expected INVALID_IMAGE")
-        } catch (e: DusimagezException.InvalidImage) {
+        } catch (e: InvalidImage) {
             assertEquals("INVALID_IMAGE", e.code)
         }
     }
@@ -177,7 +184,7 @@ class DusimagezTest {
         try {
             Dusimagez.compressImage(TestPng.solid(32, 32, 1, 2, 3), CompressOptions(quality = 0u))
             fail("expected INVALID_QUALITY")
-        } catch (e: DusimagezException.InvalidQuality) {
+        } catch (e: InvalidQuality) {
             assertEquals("INVALID_QUALITY", e.code)
         }
     }

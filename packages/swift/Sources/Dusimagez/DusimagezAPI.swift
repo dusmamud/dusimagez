@@ -67,7 +67,7 @@ public extension DusimagezError {
 
 /// Offline image compressor — the dusimagez Rust core over UniFFI.
 /// Every function is a thin call into the core; no logic lives here.
-public enum Dusimagez {
+public enum DusimagezAPI {
 
     /// Re-encode an image at a fixed quality (and `options.format`,
     /// or the input format when unset). Throws `DusimagezError`

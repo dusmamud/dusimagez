@@ -205,8 +205,12 @@ final class Dusimagez
     /** Library version, e.g. "0.1.0" (lockstep with the core crate). */
     public function version(): string
     {
+        // PHP FFI already converts a `char *` return to a PHP string
+        // (null when the C function returns NULL) — do NOT wrap it in
+        // FFI::string(), which requires CData and throws a TypeError
+        // on a string. Same rule as dusrelimage's PHP wrapper.
         $ptr = $this->ffi->dusimagez_version();
-        return $ptr === null ? '' : \FFI::string($ptr);
+        return $ptr === null ? '' : $ptr;
     }
 
     // ------------------------------------------------------------------
@@ -582,7 +586,9 @@ final class Dusimagez
     public function compressWithReport(string $input, array $options = []): array
     {
         $cOpts = $this->newOptions($options);
-        $rep = \FFI::new('DusimagezReport');
+        // Instance new(): static FFI::new() cannot see typedefs from
+        // this instance's cdef (ParserException 'Undefined C type').
+        $rep = $this->ffi->new('DusimagezReport');
         $status = $this->ffi->dusimagez_compress_with_report(
             $this->inputBuffer($input),
             strlen($input),
@@ -613,7 +619,8 @@ final class Dusimagez
      */
     public function getInfo(string $input): array
     {
-        $info = \FFI::new('DusimagezInfo');
+        // Instance new(): see compressWithReport() above.
+        $info = $this->ffi->new('DusimagezInfo');
         $status = $this->ffi->dusimagez_get_info(
             $this->inputBuffer($input),
             strlen($input),
@@ -661,7 +668,9 @@ final class Dusimagez
             // Keep each buffer alive for the whole call: $bufs holds
             // the owning CData, $ptrs only points at it.
             $bufs[$i] = $this->inputBuffer($input);
-            $ptrs[$i] = $bufs[$i] === null ? null : \FFI::addr($bufs[$i]);
+            // addr() of the array itself is uint8_t(*)[N]; the slot
+            // wants uint8_t*, so take the address of element 0.
+            $ptrs[$i] = $bufs[$i] === null ? null : \FFI::addr($bufs[$i][0]);
             $lens[$i] = strlen($input);
         }
         $out = \FFI::new('uint8_t*[1]');
@@ -726,7 +735,9 @@ final class Dusimagez
     private function newOptions(array $options): \FFI\CData
     {
         $norm = self::normalizeOptions($options);
-        $c = \FFI::new('DusimagezOptions');
+        // Instance new(): static FFI::new() cannot see typedefs from
+        // this instance's cdef (ParserException 'Undefined C type').
+        $c = $this->ffi->new('DusimagezOptions');
         foreach ($norm as $key => $value) {
             $c->{$key} = $value;
         }
@@ -771,7 +782,10 @@ final class Dusimagez
         if ($ptr === null) {
             return null;
         }
-        $decoded = json_decode(\FFI::string($ptr), true);
+        // $ptr is already a PHP string here: dusimagez_last_error()
+        // returns `const char *`, which PHP FFI converts to string
+        // (see version() above) — FFI::string() would throw TypeError.
+        $decoded = json_decode($ptr, true);
         if (!is_array($decoded) || empty($decoded['code'])) {
             return null;
         }

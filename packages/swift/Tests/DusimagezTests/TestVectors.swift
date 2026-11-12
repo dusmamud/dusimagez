@@ -115,7 +115,7 @@ final class TestVectors: XCTestCase {
     ) throws {
         switch op {
         case "compress_image":
-            let out = try Dusimagez.compressImage(input, options: options)
+            let out = try DusimagezAPI.compressImage(input, options: options)
             try checkExpectedImage(out, expected: expected)
         case "compress_to_size":
             guard
@@ -124,7 +124,7 @@ final class TestVectors: XCTestCase {
             else {
                 throw VectorSkip.unknownOp("compress_to_size without target_bytes")
             }
-            let out = try Dusimagez.compressToSize(input, targetBytes: target, options: options)
+            let out = try DusimagezAPI.compressToSize(input, targetBytes: target, options: options)
             try checkExpectedImage(out, expected: expected)
             if let maxSize = (expected["max_size"] as? NSNumber)?.uint64Value {
                 XCTAssertLessThanOrEqual(
@@ -133,16 +133,16 @@ final class TestVectors: XCTestCase {
                 )
             }
         case "compress_with_report":
-            let report = try Dusimagez.compressWithReport(input, options: options)
+            let report = try DusimagezAPI.compressWithReport(input, options: options)
             try checkExpectedImage(Data(report.output), expected: expected)
             if let qualityUsed = (expected["quality_used"] as? NSNumber)?.uint8Value {
                 XCTAssertEqual(report.qualityUsed, qualityUsed)
             }
         case "get_image_info":
-            let info = try Dusimagez.getImageInfo(input)
+            let info = try DusimagezAPI.getImageInfo(input)
             checkExpectedInfo(info, expected: expected)
         case "bulk_compress":
-            let results = Dusimagez.bulkCompress([input], options: options)
+            let results = DusimagezAPI.bulkCompress([input], options: options)
             XCTAssertEqual(results.count, 1)
             XCTAssertTrue(results[0].ok)
             if let report = results[0].report {
@@ -155,7 +155,7 @@ final class TestVectors: XCTestCase {
 
     private func checkExpectedImage(_ out: Data, expected: [String: Any]) throws {
         guard !expected.isEmpty else { return }
-        let info = try Dusimagez.getImageInfo(out)
+        let info = try DusimagezAPI.getImageInfo(out)
         checkExpectedInfo(info, expected: expected)
     }
 

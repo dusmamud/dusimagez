@@ -14,7 +14,7 @@
 //
 // The `DusimagezFFI` system-library target below exposes the C header
 // uniffi-bindgen generates (`dusimagezFFI.h` + modulemap); the
-// generated `Dusimagez.swift` calls those C symbols, which resolve
+// generated `dusimagez.swift` calls those C symbols, which resolve
 // from libuniffi_dusimagez.a at link time. Do NOT claim a Linux iOS build:
 // iOS/macOS targets need macOS (macos-latest in CI).
 import PackageDescription

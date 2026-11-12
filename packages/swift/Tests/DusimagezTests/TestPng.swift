@@ -1,4 +1,5 @@
 import Foundation
+import Compression
 
 /// Tiny in-test PNG encoder (RGB8, filter 0 per scanline), so tests
 /// need no binary blobs and no extra core API. Deterministic for a
