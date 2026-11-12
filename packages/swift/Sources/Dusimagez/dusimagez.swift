@@ -25,13 +25,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_dusimagez_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_uniffi_dusimagez_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_dusimagez_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_uniffi_dusimagez_rustbuffer_free(self, $0) }
     }
 }
 
@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureDusimagezInitialized()
+    uniffiEnsureUniffiDusimagezInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -2074,7 +2074,7 @@ fileprivate struct FfiConverterSequenceSequenceUInt8: FfiConverterRustBuffer {
 }
 public func bulkCompress(inputs: [[UInt8]], options: CompressOptions) -> [BulkItemResult]  {
     return try!  FfiConverterSequenceTypeBulkItemResult.lift(try! rustCall() {
-    uniffi_dusimagez_fn_func_bulk_compress(
+    uniffi_uniffi_dusimagez_fn_func_bulk_compress(
         FfiConverterSequenceSequenceUInt8.lower(inputs),
         FfiConverterTypeCompressOptions_lower(options),$0
     )
@@ -2082,7 +2082,7 @@ public func bulkCompress(inputs: [[UInt8]], options: CompressOptions) -> [BulkIt
 }
 public func compressImage(input: [UInt8], options: CompressOptions)throws  -> [UInt8]  {
     return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeDusimagezError_lift) {
-    uniffi_dusimagez_fn_func_compress_image(
+    uniffi_uniffi_dusimagez_fn_func_compress_image(
         FfiConverterSequenceUInt8.lower(input),
         FfiConverterTypeCompressOptions_lower(options),$0
     )
@@ -2090,7 +2090,7 @@ public func compressImage(input: [UInt8], options: CompressOptions)throws  -> [U
 }
 public func compressToSize(input: [UInt8], targetBytes: UInt64, options: CompressOptions)throws  -> [UInt8]  {
     return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeDusimagezError_lift) {
-    uniffi_dusimagez_fn_func_compress_to_size(
+    uniffi_uniffi_dusimagez_fn_func_compress_to_size(
         FfiConverterSequenceUInt8.lower(input),
         FfiConverterUInt64.lower(targetBytes),
         FfiConverterTypeCompressOptions_lower(options),$0
@@ -2099,7 +2099,7 @@ public func compressToSize(input: [UInt8], targetBytes: UInt64, options: Compres
 }
 public func compressWithReport(input: [UInt8], options: CompressOptions)throws  -> CompressReport  {
     return try  FfiConverterTypeCompressReport_lift(try rustCallWithError(FfiConverterTypeDusimagezError_lift) {
-    uniffi_dusimagez_fn_func_compress_with_report(
+    uniffi_uniffi_dusimagez_fn_func_compress_with_report(
         FfiConverterSequenceUInt8.lower(input),
         FfiConverterTypeCompressOptions_lower(options),$0
     )
@@ -2107,7 +2107,7 @@ public func compressWithReport(input: [UInt8], options: CompressOptions)throws  
 }
 public func getImageInfo(input: [UInt8])throws  -> ImageInfo  {
     return try  FfiConverterTypeImageInfo_lift(try rustCallWithError(FfiConverterTypeDusimagezError_lift) {
-    uniffi_dusimagez_fn_func_get_image_info(
+    uniffi_uniffi_dusimagez_fn_func_get_image_info(
         FfiConverterSequenceUInt8.lower(input),$0
     )
 })
@@ -2124,23 +2124,23 @@ private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
     let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_dusimagez_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_uniffi_dusimagez_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_dusimagez_checksum_func_bulk_compress() != 48997) {
+    if (uniffi_uniffi_dusimagez_checksum_func_bulk_compress() != 52099) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_dusimagez_checksum_func_compress_image() != 41279) {
+    if (uniffi_uniffi_dusimagez_checksum_func_compress_image() != 1082) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_dusimagez_checksum_func_compress_to_size() != 20523) {
+    if (uniffi_uniffi_dusimagez_checksum_func_compress_to_size() != 9788) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_dusimagez_checksum_func_compress_with_report() != 54991) {
+    if (uniffi_uniffi_dusimagez_checksum_func_compress_with_report() != 39383) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_dusimagez_checksum_func_get_image_info() != 59710) {
+    if (uniffi_uniffi_dusimagez_checksum_func_get_image_info() != 30487) {
         return InitializationResult.apiChecksumMismatch
     }
 
@@ -2149,7 +2149,7 @@ private let initializationResult: InitializationResult = {
 
 // Make the ensure init function public so that other modules which have external type references to
 // our types can call it.
-public func uniffiEnsureDusimagezInitialized() {
+public func uniffiEnsureUniffiDusimagezInitialized() {
     switch initializationResult {
     case .ok:
         break

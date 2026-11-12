@@ -3,7 +3,9 @@
 //! This crate exists for one reason: the Kotlin (Android) and Swift
 //! (iOS/macOS) bindings need a `cdylib` named `uniffi_dusimagez` that
 //! ships the UniFFI scaffolding for the UDL in
-//! `crates/dusimagez/src/dusimagez.udl`. There is **no logic here** —
+//! `crates/dusimagez-uniffi/src/dusimagez.udl` (the UDL must live in
+//! this crate — see build.rs — so UniFFI's symbol namespace matches
+//! this crate's lib name). There is **no logic here** —
 //! every type is a thin adapter over the core crate's types, and every
 //! function converts its arguments and delegates to
 //! [`dusimagez`].

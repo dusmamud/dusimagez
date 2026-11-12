@@ -2,10 +2,11 @@
 # Regenerate the Swift bindings from the UDL and copy them into the
 # SwiftPM package. Run from the repo root.
 #
-# Requires: uniffi-bindgen 0.29 (same version the core's `uniffi`
-# dependency pins — see crates/dusimagez/Cargo.toml).
-#   cargo install uniffi-bindgen --version 0.29
-#
+# Requires: the in-workspace `uniffi-bindgen` binary (UniFFI 0.29 —
+# same version the core's `uniffi` dependency pins — see
+# crates/dusimagez-uniffi/Cargo.toml). There is no `uniffi-bindgen`
+# binary crate on crates.io in 0.29; do NOT `cargo install` it.
+# The binary is built on demand by the command below.
 # Output:
 #   Sources/Dusimagez/dusimagez.swift   (generated Swift API)
 #   Sources/DusimagezFFI/dusimagezFFI.h (generated C header)
@@ -14,21 +15,22 @@
 # uniffi-bindgen at consumer build time (the Rust static library is
 # still supplied separately — see README.md).
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+# Script lives three levels below the repo root
+# (packages/swift/scripts/) — go up three, not two.
+cd "$(dirname "$0")/../../.."
 
-UDL="crates/dusimagez/src/dusimagez.udl"
+UDL="crates/dusimagez-uniffi/src/dusimagez.udl"
 SWIFT_OUT="packages/swift/Sources/Dusimagez"
 FFI_OUT="packages/swift/Sources/DusimagezFFI"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-if ! command -v uniffi-bindgen >/dev/null 2>&1; then
-  echo "uniffi-bindgen not found — install it first:" >&2
-  echo "  cargo install uniffi-bindgen --version 0.29" >&2
+if ! cargo run -q -p dusimagez-uniffi --bin uniffi-bindgen -- --version >/dev/null 2>&1; then
+  echo "uniffi-bindgen binary failed to build — see crates/dusimagez-uniffi/Cargo.toml" >&2
   exit 1
 fi
 
-uniffi-bindgen generate --language swift --out-dir "$TMP" "$UDL"
+cargo run -q -p dusimagez-uniffi --bin uniffi-bindgen -- generate --language swift --out-dir "$TMP" "$UDL"
 mkdir -p "$SWIFT_OUT" "$FFI_OUT"
 cp "$TMP/dusimagez.swift" "$SWIFT_OUT/dusimagez.swift"
 # uniffi-bindgen 0.29 emits the C header + modulemap next to the Swift

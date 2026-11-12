@@ -58,7 +58,7 @@ open class RustBuffer : Structure() {
     companion object {
         internal fun alloc(size: ULong = 0UL) = uniffiRustCall() { status ->
             // Note: need to convert the size to a `Long` value to make this work with JVM.
-            UniffiLib.INSTANCE.ffi_dusimagez_rustbuffer_alloc(size.toLong(), status)
+            UniffiLib.INSTANCE.ffi_uniffi_dusimagez_rustbuffer_alloc(size.toLong(), status)
         }.also {
             if(it.data == null) {
                throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
@@ -74,7 +74,7 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = uniffiRustCall() { status ->
-            UniffiLib.INSTANCE.ffi_dusimagez_rustbuffer_free(buf, status)
+            UniffiLib.INSTANCE.ffi_uniffi_dusimagez_rustbuffer_free(buf, status)
         }
     }
 
@@ -736,17 +736,17 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 // when the library is loaded.
 internal interface IntegrityCheckingUniffiLib : Library {
     // Integrity check functions only
-    fun uniffi_dusimagez_checksum_func_bulk_compress(
+    fun uniffi_uniffi_dusimagez_checksum_func_bulk_compress(
 ): Short
-fun uniffi_dusimagez_checksum_func_compress_image(
+fun uniffi_uniffi_dusimagez_checksum_func_compress_image(
 ): Short
-fun uniffi_dusimagez_checksum_func_compress_to_size(
+fun uniffi_uniffi_dusimagez_checksum_func_compress_to_size(
 ): Short
-fun uniffi_dusimagez_checksum_func_compress_with_report(
+fun uniffi_uniffi_dusimagez_checksum_func_compress_with_report(
 ): Short
-fun uniffi_dusimagez_checksum_func_get_image_info(
+fun uniffi_uniffi_dusimagez_checksum_func_get_image_info(
 ): Short
-fun ffi_dusimagez_uniffi_contract_version(
+fun ffi_uniffi_dusimagez_uniffi_contract_version(
 ): Int
 
 }
@@ -791,127 +791,127 @@ internal interface UniffiLib : Library {
     }
 
     // FFI functions
-    fun uniffi_dusimagez_fn_func_bulk_compress(`inputs`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    fun uniffi_uniffi_dusimagez_fn_func_bulk_compress(`inputs`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun uniffi_dusimagez_fn_func_compress_image(`input`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+fun uniffi_uniffi_dusimagez_fn_func_compress_image(`input`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun uniffi_dusimagez_fn_func_compress_to_size(`input`: RustBuffer.ByValue,`targetBytes`: Long,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+fun uniffi_uniffi_dusimagez_fn_func_compress_to_size(`input`: RustBuffer.ByValue,`targetBytes`: Long,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun uniffi_dusimagez_fn_func_compress_with_report(`input`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+fun uniffi_uniffi_dusimagez_fn_func_compress_with_report(`input`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun uniffi_dusimagez_fn_func_get_image_info(`input`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+fun uniffi_uniffi_dusimagez_fn_func_get_image_info(`input`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun ffi_dusimagez_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun ffi_dusimagez_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun ffi_dusimagez_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-fun ffi_dusimagez_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun ffi_dusimagez_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_u8(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_u8(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_u8(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_u8(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-fun ffi_dusimagez_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_i8(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_i8(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_i8(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_i8(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-fun ffi_dusimagez_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_u16(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_u16(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_u16(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_u16(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Short
-fun ffi_dusimagez_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_i16(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_i16(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_i16(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_i16(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Short
-fun ffi_dusimagez_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_u32(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_u32(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_u32(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_u32(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
-fun ffi_dusimagez_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_i32(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_i32(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_i32(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_i32(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
-fun ffi_dusimagez_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_u64(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_u64(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_u64(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_u64(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-fun ffi_dusimagez_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_i64(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_i64(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_i64(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_i64(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-fun ffi_dusimagez_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_f32(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_f32(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_f32(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_f32(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Float
-fun ffi_dusimagez_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_f64(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_f64(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_f64(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_f64(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Double
-fun ffi_dusimagez_rust_future_poll_pointer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_pointer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_pointer(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_pointer(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_pointer(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_pointer(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_pointer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_pointer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Pointer
-fun ffi_dusimagez_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_rust_buffer(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_rust_buffer(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_rust_buffer(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_rust_buffer(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-fun ffi_dusimagez_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+fun ffi_uniffi_dusimagez_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_cancel_void(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_cancel_void(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_free_void(`handle`: Long,
+fun ffi_uniffi_dusimagez_rust_future_free_void(`handle`: Long,
 ): Unit
-fun ffi_dusimagez_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+fun ffi_uniffi_dusimagez_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 
 }
@@ -920,26 +920,26 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
     // Get the bindings contract version from our ComponentInterface
     val bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
-    val scaffolding_contract_version = lib.ffi_dusimagez_uniffi_contract_version()
+    val scaffolding_contract_version = lib.ffi_uniffi_dusimagez_uniffi_contract_version()
     if (bindings_contract_version != scaffolding_contract_version) {
         throw RuntimeException("UniFFI contract version mismatch: try cleaning and rebuilding your project")
     }
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_dusimagez_checksum_func_bulk_compress() != 48997.toShort()) {
+    if (lib.uniffi_uniffi_dusimagez_checksum_func_bulk_compress() != 52099.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_dusimagez_checksum_func_compress_image() != 41279.toShort()) {
+    if (lib.uniffi_uniffi_dusimagez_checksum_func_compress_image() != 1082.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_dusimagez_checksum_func_compress_to_size() != 20523.toShort()) {
+    if (lib.uniffi_uniffi_dusimagez_checksum_func_compress_to_size() != 9788.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_dusimagez_checksum_func_compress_with_report() != 54991.toShort()) {
+    if (lib.uniffi_uniffi_dusimagez_checksum_func_compress_with_report() != 39383.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_dusimagez_checksum_func_get_image_info() != 59710.toShort()) {
+    if (lib.uniffi_uniffi_dusimagez_checksum_func_get_image_info() != 30487.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -2335,7 +2335,7 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
 } fun `bulkCompress`(`inputs`: List<List<kotlin.UByte>>, `options`: CompressOptions): List<BulkItemResult> {
             return FfiConverterSequenceTypeBulkItemResult.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.INSTANCE.uniffi_dusimagez_fn_func_bulk_compress(
+    UniffiLib.INSTANCE.uniffi_uniffi_dusimagez_fn_func_bulk_compress(
         FfiConverterSequenceSequenceUByte.lower(`inputs`),FfiConverterTypeCompressOptions.lower(`options`),_status)
 }
     )
@@ -2345,7 +2345,7 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     @Throws(DusimagezException::class) fun `compressImage`(`input`: List<kotlin.UByte>, `options`: CompressOptions): List<kotlin.UByte> {
             return FfiConverterSequenceUByte.lift(
     uniffiRustCallWithError(DusimagezException) { _status ->
-    UniffiLib.INSTANCE.uniffi_dusimagez_fn_func_compress_image(
+    UniffiLib.INSTANCE.uniffi_uniffi_dusimagez_fn_func_compress_image(
         FfiConverterSequenceUByte.lower(`input`),FfiConverterTypeCompressOptions.lower(`options`),_status)
 }
     )
@@ -2355,7 +2355,7 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     @Throws(DusimagezException::class) fun `compressToSize`(`input`: List<kotlin.UByte>, `targetBytes`: kotlin.ULong, `options`: CompressOptions): List<kotlin.UByte> {
             return FfiConverterSequenceUByte.lift(
     uniffiRustCallWithError(DusimagezException) { _status ->
-    UniffiLib.INSTANCE.uniffi_dusimagez_fn_func_compress_to_size(
+    UniffiLib.INSTANCE.uniffi_uniffi_dusimagez_fn_func_compress_to_size(
         FfiConverterSequenceUByte.lower(`input`),FfiConverterULong.lower(`targetBytes`),FfiConverterTypeCompressOptions.lower(`options`),_status)
 }
     )
@@ -2365,7 +2365,7 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     @Throws(DusimagezException::class) fun `compressWithReport`(`input`: List<kotlin.UByte>, `options`: CompressOptions): CompressReport {
             return FfiConverterTypeCompressReport.lift(
     uniffiRustCallWithError(DusimagezException) { _status ->
-    UniffiLib.INSTANCE.uniffi_dusimagez_fn_func_compress_with_report(
+    UniffiLib.INSTANCE.uniffi_uniffi_dusimagez_fn_func_compress_with_report(
         FfiConverterSequenceUByte.lower(`input`),FfiConverterTypeCompressOptions.lower(`options`),_status)
 }
     )
@@ -2375,7 +2375,7 @@ public object FfiConverterSequenceSequenceUByte: FfiConverterRustBuffer<List<Lis
     @Throws(DusimagezException::class) fun `getImageInfo`(`input`: List<kotlin.UByte>): ImageInfo {
             return FfiConverterTypeImageInfo.lift(
     uniffiRustCallWithError(DusimagezException) { _status ->
-    UniffiLib.INSTANCE.uniffi_dusimagez_fn_func_get_image_info(
+    UniffiLib.INSTANCE.uniffi_uniffi_dusimagez_fn_func_get_image_info(
         FfiConverterSequenceUByte.lower(`input`),_status)
 }
     )

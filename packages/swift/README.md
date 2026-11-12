@@ -27,7 +27,7 @@ packages/swift/
 
 The generated files are **checked in** on purpose: the package builds
 without `uniffi-bindgen` at consumer build time. Regenerate only when
-`crates/dusimagez/src/dusimagez.udl` changes.
+`crates/dusimagez-uniffi/src/dusimagez.udl` changes.
 
 ## Usage
 

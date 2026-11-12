@@ -9,10 +9,13 @@ converts its arguments and delegates to the core.
 
 - `src/lib.rs` — adapter types (names/fields match the UDL exactly),
   conversions to/from core types, and the five SPEC §1 functions.
-- `src/dusimagez.udl` lives with the core crate
-  (`crates/dusimagez/src/dusimagez.udl`) — it is the shared contract
+- `src/dusimagez.udl` lives in THIS crate — it is the shared contract
   for the Kotlin/Swift bindings, and `build.rs` generates the
-  scaffolding from that same file.
+  scaffolding from it. It must NOT move to the core crate: UniFFI
+  derives the FFI symbol namespace from the crate that owns the UDL
+  file, and that must match this crate's lib name
+  (`uniffi_dusimagez`), or the bindings link against symbols the
+  library never exports.
 - `[lib] name = "uniffi_dusimagez"`, `crate-type = ["cdylib", "staticlib", "rlib"]`.
   The generated Kotlin loads the library as `uniffi_dusimagez`
   (JNA); do not rename it. The Swift side links the same symbols
@@ -46,4 +49,4 @@ packages/swift/scripts/regenerate-bindings.sh
 ```
 
 Both scripts use `uniffi-bindgen 0.29` against
-`crates/dusimagez/src/dusimagez.udl`.
+`crates/dusimagez-uniffi/src/dusimagez.udl`.
