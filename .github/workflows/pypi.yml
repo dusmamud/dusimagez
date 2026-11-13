@@ -1,12 +1,20 @@
 name: Publish to PyPI
 
-# Trusted Publishing (OIDC) — manual dispatch only.
+# Trusted Publishing (OIDC) — auto on every GitHub Release, plus manual
+# dispatch. The Release workflow (release.yml) creates the GitHub Release
+# when a release PR merges, so every new version publishes here with no
+# human step. No PyPI token is stored in repo secrets.
 # One-time dashboard setup required first: pypi.org → project
 # dusimagez → Settings → Publishing → pending trusted publisher
 # (GitHub Actions, repo dusmamud/dusimagez, workflow pypi.yml).
-# No PyPI token is stored in repo secrets.
+# Unlike npm/crates.io, PyPI pending publishers CAN be set up before
+# the project exists, so no manual bootstrap publish is needed here.
+# The version check below skips gracefully when the version is already
+# on PyPI, so re-runs never double-publish.
 on:
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   id-token: write
@@ -34,7 +42,19 @@ jobs:
         run: |
           pip install build
           python -m build --sdist --outdir ../../dist
+      - name: Check version is new
+        id: version-check
+        run: |
+          version=$(grep -m1 '^version' packages/python/pyproject.toml | sed -E 's/version = "(.*)"/\1/')
+          if curl -sf "https://pypi.org/pypi/dusimagez/$version/json" -o /dev/null; then
+            echo "dusimagez $version is already on PyPI — skipping publish"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publishing dusimagez $version"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish to PyPI (OIDC)
+        if: steps.version-check.outputs.publish == 'true'
         uses: pypa/gh-action-pypi-publish@v1
         with:
           packages-dir: dist

@@ -1,12 +1,23 @@
 name: Publish to npm
 
-# Trusted Publishing (OIDC) — manual dispatch only.
+# Trusted Publishing (OIDC) — auto on every GitHub Release, plus manual
+# dispatch. The Release workflow (release.yml) creates the GitHub Release
+# when a release PR merges, so every new version publishes here with no
+# human step. No npm token is stored in repo secrets.
 # One-time dashboard setup required first: npmjs.com → package
 # dusimagez → Settings → Publishing access → Trusted publisher
 # (GitHub Actions, repo dusmamud/dusimagez, workflow npm.yml).
-# No npm token is stored in repo secrets.
+# BOOTSTRAP: npm cannot attach a trusted publisher to a package that
+# does not exist yet. Until dusimagez 0.1.0 is published once by hand
+# (npm publish --access public from a logged-in machine), this workflow
+# fails at the publish step — expected, not a bug. After that first
+# publish + the trusted-publisher setup, every release auto-publishes.
+# The version check below skips gracefully when the version is already
+# on npm, so re-runs and the manual bootstrap never double-publish.
 on:
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   id-token: write
@@ -36,6 +47,11 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+          # setup-node defaults its `token` input to github.token; an
+          # explicit empty value keeps NODE_AUTH_TOKEN unset so npm does
+          # the OIDC exchange (indycheck lesson — without this, npm
+          # skips OIDC and the publish PUT 404s).
+          token: ""
           cache: npm
           cache-dependency-path: packages/js/package-lock.json
       - name: Install deps
@@ -46,6 +62,19 @@ jobs:
         run: |
           npm run build
           npm test
+      - name: Check version is new
+        id: version-check
+        working-directory: packages/js
+        run: |
+          version=$(node -e "console.log(require('./package.json').version)")
+          if npm view "dusimagez@$version" version 2>/dev/null; then
+            echo "dusimagez@$version is already on npm — skipping publish"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publishing dusimagez@$version"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish (OIDC, provenance)
+        if: steps.version-check.outputs.publish == 'true'
         working-directory: packages/js
         run: npm publish --provenance --access public

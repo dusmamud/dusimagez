@@ -1,26 +1,39 @@
-name: Release PR
-# Release flow (mirrors dusrelimage's green Release PR workflow):
-#  - On every push to main, `release-plz update` bumps the Cargo workspace
-#    version from conventional commits (feat -> minor, fix -> patch,
-#    chore/docs -> no bump) and updates CHANGELOG.md, and the job opens
-#    (or updates) a `release-plz` PR with all of it.
-#  - Merging that PR does NOT publish by itself. Publish stays manual
-#    (cargo publish / npm.yml / pypi.yml dispatches).
+name: Release
+# Release flow (indycheck pattern — GitHub Actions + OIDC, no tokens):
+#  - On every push to main, the `release-pr` job runs `release-plz update`,
+#    bumps the Cargo workspace version from conventional commits
+#    (feat -> minor, fix -> patch, chore/docs -> no bump), syncs the
+#    JS/Python/PHP/website versions with scripts/sync-versions.sh, and
+#    opens (or updates) a `release-plz` PR with all of it.
+#  - On the same push, the `release` job runs `release-plz release`: it
+#    publishes to crates.io via Trusted Publishing (GitHub OIDC) any
+#    version not yet on the registry, and creates the git tag + GitHub
+#    Release for it. On ordinary pushes it is a no-op. The GitHub
+#    Release it creates is what triggers npm.yml and pypi.yml — so a
+#    merged release PR auto-publishes everywhere, every version.
 #  - NOTE: the first version of this file used release-plz/action with
 #    `command: release-pr` — it failed with 403 opening the PR, so the
-#    action is NOT used here. Install the CLI directly and run `update`
-#    ourselves, exactly as dusrelimage does. Pinned to 0.4.3: 0.4.2 has
-#    a changelog-template regression that breaks `release-plz update`.
-#    If the `gh pr create` step below ever 403s on a real release, the
+#    action is NOT used for the PR job. Install the CLI directly and run
+#    `update` ourselves, exactly as dusrelimage does. Pinned to 0.4.3:
+#    0.4.2 has a changelog-template regression that breaks
+#    `release-plz update`. The `release` job DOES use
+#    release-plz/action@v0.5 (command: release) — same as indycheck —
+#    because it creates no PR.
+#  - NOTE: the OIDC JWT names this workflow file (release.yml), so the
+#    crates.io trusted publisher must name release.yml too. Do NOT move
+#    the `release` job to another file — crates.io rejected exactly that
+#    in indycheck (400) when the job lived in release-pr.yml.
+#  - BOOTSTRAP: Trusted Publishing cannot create a brand-new crate.
+#    Until dusimagez 0.1.0 exists on crates.io (one manual
+#    `cargo publish -p dusimagez` with a token, then configure the
+#    trusted publisher on crates.io: repo dusmamud/dusimagez,
+#    workflow file release.yml, no environment), the `release` job
+#    skips itself via the crate-exists gate below instead of going
+#    red. After the bootstrap, every merged release PR publishes
+#    automatically. Same shape on npm — see npm.yml.
+#  - If the `gh pr create` step below ever 403s on a real release, the
 #    repo setting "Allow GitHub Actions to create and approve pull
 #    requests" needs enabling (dashboard step, not code).
-#  - NOTE: there is no scripts/sync-versions.sh yet (dusrelimage has
-#    one); until it exists, JS/Python/website versions are NOT
-#    auto-synced by this workflow — bump them in lockstep by hand.
-#  - For the first publish (v0.1.0) the CHANGELOG already lists 0.1.0
-#    as released, so release-plz finds "nothing to release" and this
-#    job exits 0 — the first crates.io publish goes via manual
-#    dispatch / cargo publish, exactly as with dusrelimage.
 on:
   push:
     branches: [main]
@@ -28,6 +41,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release-pr:
@@ -46,6 +60,8 @@ jobs:
           tool: release-plz@0.4.3
       - name: Update versions and changelog
         run: release-plz update
+      - name: Sync JS/Python/PHP/website versions with the Rust workspace
+        run: bash scripts/sync-versions.sh
       - name: Refresh Cargo.lock
         run: cargo check -p dusimagez
       - name: Open or update the release PR
@@ -68,5 +84,33 @@ jobs:
           else
             gh pr create --base main --head release-plz \
               --title "chore: Release package dusimagez version $version" \
-              --body "Release PR (release-plz). After merging, publish dusimagez $version to crates.io manually; npm and PyPI still need their manual dispatches."
+              --body "Release PR (release-plz). After merging, the Release workflow publishes dusimagez $version to crates.io automatically, and the GitHub Release it creates triggers the npm and PyPI publish workflows."
           fi
+
+  release:
+    name: release-plz release (crates.io, OIDC)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check if the crate exists on crates.io yet
+        id: crate-exists
+        run: |
+          if curl -sf -H "User-Agent: dusimagez-release-check" https://crates.io/api/v1/crates/dusimagez -o /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "dusimagez is not on crates.io yet — bootstrap publish needed (manual cargo publish once, then configure the trusted publisher). Skipping release-plz release."
+          fi
+      - name: Install Rust toolchain
+        if: steps.crate-exists.outputs.exists == 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz
+        if: steps.crate-exists.outputs.exists == 'true'
+        uses: release-plz/action@v0.5
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
